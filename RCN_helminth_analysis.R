@@ -60,7 +60,7 @@ contMap(mpd_tree, gen, fsize= .3, lwd=1.2, outline=FALSE, sig = .5, type = "fan"
 add.scale.bar(length =.2)
 
 ## fit phylogenetic models to the data
-fitContinuous(mpd_tree,gen, model="lambda") ##Best model lambda=.5453; aicc=1861.819
+fitContinuous(mpd_tree,gen, model="lambda") ##Best model: lambda=.5453; aicc=1861.819
 fitContinuous(mpd_tree,gen,model="BM") #aicc=1943.006
 fitContinuous(mpd_tree,gen,model="OU") #alpha = 2.71828; aicc=1905.292
 fitContinuous(mpd_tree,gen,model="white") #aicc= 1887.075529
@@ -139,7 +139,6 @@ para.mpd[is.na(para.mpd)] <- 0 ## specialists have MPD of 0
 merge(data.frame(parasite=names(gen), ToL.MPD=unname(gen)),
       data.frame(parasite=rownames(df), Phylacine.MPD=para.mpd),
       by="parasite") -> compMPD
-## You'll want to look at this more closely! There are some strange things going on - e.g., species for which Phylacine.MPD > 0 but ToL.MPD = 0
 with(compMPD, plot(ToL.MPD, Phylacine.MPD))
 
 
