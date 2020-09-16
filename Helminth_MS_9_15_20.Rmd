@@ -1,0 +1,522 @@
+---
+title: "Helminth_MS_9_15_20"
+author: "APB"
+date: "9/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ape)
+library(plyr)
+library(tidyverse)
+library(ouch)
+library(dplyr)
+library(phytools)
+library(geiger)
+library(caper)
+library(picante)
+library(pmc)
+
+```
+
+
+```{r load in APBs helminth tree, include=FALSE}
+
+## load tree
+tree<-read.nexus("hel2_44burn_copy.trees")
+
+## load the binomial names for the coded tree names
+nom <- read.csv("name_key.csv")
+
+# make nom characters not factors
+nom$CorrectName<-as.character(nom$CorrectName)
+nom$Code<-as.character(nom$Code)
+
+## ensure that every tip has a binomial name
+which(!(tree$tip.label %in% nom[,2])) ## ZTGLUN does not have a binomial name
+
+## drop it from the tree
+hel_tree <- drop.tip(tree, "ZTGLUN")
+tree <- drop.tip(hel_tree, "HABMUS") #nematodes in the wrong area of the tree
+tree <- drop.tip(tree, "ASCLUM") #nematodes in the wrong area of the tree
+tree <- drop.tip(tree, "ASCSUU") #nematodes in the wrong area of the tree
+tree <- drop.tip(tree, "PELSTR") #nematodes in the wrong area of the tree
+
+##binomial names for only the species in the tree
+nom[nom$Code %in% tree$tip.label,]->a
+
+##nom in same order as tree tip labels
+b<- a[match(tree$tip.label, a$Code),]
+
+#replace code names with binomial names
+tree$tip.label<-b$CorrectName
+
+#check
+plot(tree, cex=0.3, type = "f")
+
+#rename the global tree for GMPD data
+global_tree<-tree
+
+#check
+plot(global_tree)
+
+```
+
+
+
+```{r load nearctic data, include = FALSE}
+#host-parasite association data
+nearctic_assoc_data<-read.csv("~/Desktop/Host_Range_Nearctic_Mammals_list.csv", header=T)
+
+#change to characters instead of factors
+nearctic_assoc_data$Host<-as.character(nearctic_assoc_data$Host)
+nearctic_assoc_data$Parasite<-as.character(nearctic_assoc_data$Parasite)
+
+#parasite abundance/occurence data
+nearctic_abund_data<-read.csv("~/Desktop/Host_Range_Nearctic_Mammals.csv")
+
+#change to characters instead of factors
+nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
+
+```
+
+
+
+```{r load global data from GMPD, include =FALSE}
+## Read in GMPD data
+GMPDmain<-read.csv("GMPD_main.csv")
+GMPDparasite<-read.csv("GMPD_parasite_traits.csv")
+
+## Load GMPD data and subset down to the species in the parasite phylogeny
+GMPDsmall<-GMPDmain[GMPDmain$ParasiteCorrectedName %in% global_tree$tip.label, ]
+
+
+```
+
+
+
+```{r mammal data from PHYLACINE, include=FALSE}
+## load mammal tree from Phylacine data
+mam_tree<-read.nexus("mammal_phylo_consensus.nex") #load in consensus mammal tree to use as a response variable
+small_mam_tree<-read.nexus("Small_phylogeny_consensus.nex") #load in consensus small mammal tree
+#this tree is supposed to be more accurate, but may have less data (seems to have 2 less species of mammals)
+small_mam_tree$tip.label <-gsub("_", " ", small_mam_tree$tip.label)
+
+
+#### MAKE A MAMMAL TREE FOR HOSTS IN THE NEARCTIC DATASET ####
+
+##prune small tree to only include mammals from the Nearctic dataset
+setdiff(small_mam_tree$tip.label, nearctic_assoc_data$Host)->bye
+nearctic_mammal_tree<-drop.tip(small_mam_tree, small_mam_tree$tip.label[which(small_mam_tree$tip.label%in%bye)])
+plot(nearctic_mammal_tree, cex=0.3)
+
+#check if any hosts are missing
+setdiff(nearctic_assoc_data$Host, nearctic_mammal_tree$tip.label)->missing
+missing # "Mustela vison", "Alces americanus", "Alopex lagopus", "Erethizon dorsatus"
+
+
+#### MAKE A MAMMAL TREE FOR HOSTS IN THE GMPD DATASET ####
+
+#prune small tree to only include mammals from the GMPD
+setdiff(small_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->bye2
+GMPD_mammal_tree<-drop.tip(small_mam_tree, small_mam_tree$tip.label[which(small_mam_tree$tip.label%in%bye2)])
+plot(GMPD_mammal_tree, cex=0.3)
+
+
+```
+
+
+
+```{r calculate mpd for nearctic data, include= TRUE}
+
+##parasite: subset global tree to neartic data
+setdiff(global_tree$tip.label, nearctic_assoc_data$Parasite)->bye3
+nearctic_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye3)])
+plot(nearctic_tree, cex=0.3)
+
+#interspecific distance matrix of parasites
+nearctic_dis_para<-cophenetic.phylo(nearctic_tree) 
+
+#intespecific distance matrix of mammals 
+nearctic_dis_mam<-cophenetic.phylo(nearctic_mammal_tree) 
+
+##make the pipeline to get the absense/presence of 
+##each parasite (rows) that infect a given host (column)
+
+nearctic_mamlist<-as.vector(nearctic_mammal_tree$tip.label) #list of mammals in tip label order
+
+nearctic_para_list<-as.vector(nearctic_tree$tip.label) #list of parasites
+
+#make a dataframe with host names as columns and parasite names as rows
+nearctic_df <- data.frame(matrix(ncol=length(nearctic_mamlist),nrow=length(nearctic_para_list)), row.names = nearctic_para_list)
+colnames(nearctic_df)<-nearctic_mamlist
+
+# complete dataframe with association data, 
+# where 0 = not found in host and 1 = found in host
+
+for (i in 1:nrow(nearctic_df))
+  nearctic_df[i,] <- (colnames(nearctic_df) %in% unique(subset(nearctic_assoc_data, Parasite==rownames(nearctic_df)[i])$Host)) %>% as.numeric
+
+#save matrix
+write.csv(nearctic_df,file = "association_matrix_neoartic.csv", row.names = TRUE, col.names = TRUE)
+
+
+## Create MPD scores for every parasite using the Phylacine mammal tree 
+nearctic.para.mpd <- mpd(nearctic_df, nearctic_dis_mam)
+nearctic.para.mpd[is.na(nearctic.para.mpd)] <- 0## one host species have an MPD of 0
+names(nearctic.para.mpd)<-nearctic_para_list
+
+
+## Create MPD scores for every parasite using the Phylacine mammal tree 
+nearctic.para.mpd.remove <- mpd(nearctic_df, nearctic_dis_mam)
+names(nearctic.para.mpd.remove)<-nearctic_para_list
+nearctic.para.mpd.remove<-nearctic.para.mpd.remove[!is.na(nearctic.para.mpd.remove)]## one host species MPD removed
+
+
+
+## Create MPD scores for every host using the helminth tree
+nearctic.mam.mpd <- mpd(t(nearctic_df), nearctic_dis_para)
+nearctic.mam.mpd[is.na(nearctic.mam.mpd)] <- 0 ## hosts infected by only one parasite have MPD of 0
+names(nearctic.mam.mpd)<-nearctic_mamlist
+
+## Create MPD scores for every host using the helminth tree
+nearctic.mam.mpd.remove <- mpd(t(nearctic_df), nearctic_dis_para)
+names(nearctic.mam.mpd.remove)<-nearctic_mamlist
+nearctic.mam.mpd.remove<-nearctic.mam.mpd.remove[!is.na(nearctic.mam.mpd.remove)] ## hosts infected by only one parasite have MPD of 0
+```
+
+
+
+```{r calculate mpd for GMPD data, include =TRUE}
+##calculate the mpd of parasites and hosts!
+global_dis_para<-cophenetic.phylo(global_tree) #interspecific distance matrix of parasites
+global_dis_mam<-cophenetic.phylo(GMPD_mammal_tree) #intespecific distance matrix of mammals from small tree
+
+
+##make the pipeline to get the absense presence of each parasite (rows) that infect a given host (column)
+global_mamlist<-as.vector(GMPD_mammal_tree$tip.label) #list of mammals in tip label order
+global_para_list<-as.vector(global_tree$tip.label)
+global_df <- data.frame(matrix(ncol=length(global_mamlist),nrow=length(global_para_list)), row.names = global_para_list)
+colnames(global_df)<-global_mamlist
+
+for (i in 1:nrow(global_df))
+  global_df[i,] <- (colnames(global_df) %in% unique(subset(GMPDsmall, ParasiteCorrectedName==rownames(global_df)[i])$HostCorrectedName)) %>% as.numeric
+
+write.csv(global_df,file = "global_df.csv", row.names = TRUE, col.names = TRUE)
+
+## Create MPD scores for every parasite using the Phylacine tree
+global.para.mpd <- mpd(global_df, global_dis_mam)
+global.para.mpd[is.na(global.para.mpd)] <- 0 ## one host parasites have an mpd of 0
+names(global.para.mpd)<-global_para_list
+
+global.para.mpd.remove <- mpd(global_df, global_dis_mam)
+names(global.para.mpd.remove)<-global_para_list
+global.para.mpd.remove<-global.para.mpd.remove[!is.na(global.para.mpd.remove)] ## one host parasites are removed
+
+## Create MPD scores for every host using the helminth tree
+global.mam.mpd <- mpd(t(global_df), global_dis_para)
+global.mam.mpd[is.na(global.mam.mpd)] <- 0 ## hosts infected by only one parasite have MPD of 0
+names(global.mam.mpd)<-global_mamlist
+
+## Create MPD scores for every host using the helminth tree
+global.mam.mpd.remove <- mpd(t(global_df), global_dis_para)
+names(global.mam.mpd.remove)<-global_mamlist
+global.mam.mpd.remove<-global.mam.mpd.remove[!is.na(global.mam.mpd.remove)] ## hosts infected by only one parasite have MPD of 0
+
+```
+
+
+
+```{r check phylogenetic signal of MPD, include =TRUE}
+
+#### NEARCTIC DATASET ####
+
+#view mpd with single host species = 0 on the tree
+contMap(nearctic_tree, nearctic.para.mpd, fsize= .3, lwd=.9, leg.text="x", type="fan") #90 species
+
+#view mpd with single host species removed on the tree
+setdiff(nearctic_tree$tip.label, names(nearctic.para.mpd.remove))->bye4
+remove_nearctic_tree<-drop.tip(nearctic_tree, nearctic_tree$tip.label[which(nearctic_tree$tip.label%in%bye4)])
+plot(remove_nearctic_tree, cex=0.3)
+
+contMap(remove_nearctic_tree, nearctic.para.mpd.remove, fsize=.3, lwd=.9) #70 species
+
+
+##test phylogenetic signal of mpd with single host species = 0
+fitContinuous(nearctic_tree, nearctic.para.mpd, model="lambda") #lambda = 0.384 ; aicc = 1017.13
+fitContinuous(nearctic_tree, nearctic.para.mpd, model="white")  #                 aicc = 1023.17           
+
+
+##test phylogenetic signal of mpd with single host species removed
+fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="lambda") #lambda = 0.926; aicc = 773.37
+fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="white")  #                aicc = 791.72
+
+
+nearctic_mpd_evo<-c(1017.13,1023.17)
+names(nearctic_mpd_evo)<-c("lambda","star")
+nearctic_aic_mpd_signal <- tibble(aicc=nearctic_mpd_evo, model=names(nearctic_mpd_evo))
+nearctic_aic_mpd<-nearctic_aic_mpd_signal %>% 
+   mutate(deltaaicc=aicc-min(aicc), 
+          pow=exp(-.5*deltaaicc),
+          sumpow=sum(pow),
+          waicc=pow/sumpow) %>%
+   dplyr::select(c(2,1,3,6)) %>%
+   arrange(desc(waicc))
+
+nearctic_aic_mpd
+
+remove_nearctic_mpd_evo<-c(773.37,791.72)
+names(remove_nearctic_mpd_evo)<-c("lambda","star")
+
+remove_nearctic_aic_mpd_signal <- tibble(aicc=remove_nearctic_mpd_evo, model=names(remove_nearctic_mpd_evo))
+
+removed_nearctic_aic_mpd<-remove_nearctic_aic_mpd_signal %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+removed_nearctic_aic_mpd
+
+
+#### GLOBAL DATASET ####
+
+#view mpd with single host species = 0 on the tree
+contMap(global_tree, global.para.mpd, fsize= .3,lwd=2, type="fan") #251 species
+
+#view mpd with single host species removed on the tree
+setdiff(global_tree$tip.label, names(global.para.mpd.remove))->bye5
+remove_global_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye5)])
+plot(remove_global_tree, cex=0.3)
+
+contMap(remove_nearctic_tree, nearctic.para.mpd.remove, fsize=.3, lwd=2, type="fan") #132 species
+
+##test phylogenetic signal of mpd with single host species = 0
+fitContinuous(global_tree, global.para.mpd, model="lambda") #lambda = 0.698 ; aicc = 2485.90
+fitContinuous(global_tree, global.para.mpd, model="white")  #                 aicc = 2529.33           
+
+
+##test phylogenetic signal of mpd with single host species removed
+fitContinuous(remove_global_tree, global.para.mpd.remove, model="lambda") #lambda = 0.808; aicc = 1292.50
+fitContinuous(remove_global_tree, global.para.mpd.remove, model="white")  #                aicc = 1324.73
+
+
+global_mpd_evo<-c(2485.90,2529.33)
+names(global_mpd_evo)<-c("lambda","star")
+global_aic_mpd_signal <- tibble(aicc=global_mpd_evo, model=names(global_mpd_evo))
+global_aic_mpd<-global_aic_mpd_signal %>% 
+   mutate(deltaaicc=aicc-min(aicc), 
+          pow=exp(-.5*deltaaicc),
+          sumpow=sum(pow),
+          waicc=pow/sumpow) %>%
+   dplyr::select(c(2,1,3,6)) %>%
+   arrange(desc(waicc))
+
+global_aic_mpd
+
+
+remove_global_mpd_evo<-c(1292.50,1324.73)
+names(remove_global_mpd_evo)<-c("lambda","star")
+
+remove_global_aic_mpd_signal <- tibble(aicc=remove_global_mpd_evo, model=names(remove_global_mpd_evo))
+
+removed_global_aic_mpd<-remove_global_aic_mpd_signal %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+removed_global_aic_mpd
+```
+
+
+
+```{r check phylogenetic signal of no. of hosts, include = TRUE}
+
+#### NEARCTIC DATASET ####
+
+##same order as tree tip labels
+nearctic_freq<- nearctic_abund_data[match(nearctic_tree$tip.label, nearctic_abund_data$Parasite),]
+
+nearctic.no.taxa<-nearctic_freq$Freq #includes single host species
+names(nearctic.no.taxa)<-nearctic_freq$Parasite
+
+
+remove.nearctic.no.taxa<-(nearctic.no.taxa[!nearctic.no.taxa == 1]) # removes single host species
+
+##test phylogenetic signal for data with single host species
+fitContinuous(nearctic_tree, nearctic.no.taxa, model="lambda") #lambda=0.094,  aicc= 471.32
+fitContinuous(nearctic_tree, nearctic.no.taxa, model="white")                 #aicc= 469.62
+
+
+nearctic_no_taxa_evo<-c(471.32, 469.62)
+names(nearctic_no_taxa_evo)<-c("lambda", "star")
+
+nearctic_aic_taxa <- tibble(aicc=nearctic_no_taxa_evo, model=names(nearctic_no_taxa_evo))
+
+nearctic_aic_taxa<-nearctic_aic_taxa %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+nearctic_aic_taxa
+
+##test phylogenetic signal for data without single host species
+fitContinuous(remove_nearctic_tree, remove.nearctic.no.taxa, model="lambda") #lambda=0.091,  aicc= 363.06
+fitContinuous(remove_nearctic_tree, remove.nearctic.no.taxa, model="white")                 #aicc= 361.07
+
+remove_nearctic_no_taxa_evo<-c(363.06, 361.07)
+names(remove_nearctic_no_taxa_evo)<-c("lambda", "star")
+
+remove_nearctic_aic_taxa <- tibble(aicc=remove_nearctic_no_taxa_evo, model=names(remove_nearctic_no_taxa_evo))
+
+remove_nearctic_aic_taxa<-remove_nearctic_aic_taxa %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+remove_nearctic_aic_taxa
+
+
+#### GMPD DATASET ####
+
+load("get_nriABUND.Rda") ## nri
+
+no_taxa<-as.data.frame(nri$ntaxa)
+no_taxa$parasite<-rownames(nri)
+
+global_freq<-no_taxa[no_taxa$parasite %in% global_tree$tip.label, ] #198 species
+
+#subset global tree 
+setdiff(global_tree$tip.label, no_taxa$parasite)->bye6
+ntaxa_global_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye6)])
+#check
+plot(ntaxa_global_tree, cex=0.3)
+
+##same order as tree tip labels
+g_freq<- global_freq[match(ntaxa_global_tree$tip.label, global_freq$parasite),]
+
+#make the vector a named number
+global.no.taxa<-g_freq$`nri$ntaxa` #includes single host species
+names(global.no.taxa)<-g_freq$parasite
+
+#check
+contMap(ntaxa_global_tree, global.no.taxa, fsize=.3, type = "fan")
+
+
+#remove single host species
+remove.global.no.taxa<-(global.no.taxa[!global.no.taxa == 1]) #135 species
+
+#subset a tree to match the removed dataset
+setdiff(ntaxa_global_tree$tip.label, names(remove.global.no.taxa))->bye7
+remove_ntaxa_global_tree<-drop.tip(ntaxa_global_tree, ntaxa_global_tree$tip.label[which(ntaxa_global_tree$tip.label%in%bye7)])
+
+#check
+contMap(remove_ntaxa_global_tree, remove.global.no.taxa, fsize=.3, type ="fan")
+
+
+
+##test phylogenetic signal for data with single host species
+fitContinuous(ntaxa_global_tree, global.no.taxa, model="lambda") #lambda=0.000,  aicc= 1167.55
+fitContinuous(ntaxa_global_tree, global.no.taxa, model="white")                 #aicc= 1165.49
+
+
+global_no_taxa_evo<-c(1167.55, 1165.49)
+names(global_no_taxa_evo)<-c("lambda", "star")
+
+global_aic_taxa <- tibble(aicc=global_no_taxa_evo, model=names(global_no_taxa_evo))
+
+global_aic_taxa<-global_aic_taxa %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+global_aic_taxa
+
+##test phylogenetic signal for data without single host species
+fitContinuous(remove_ntaxa_global_tree, remove.global.no.taxa, model="lambda") #lambda=0.000,  aicc = 810.05
+fitContinuous(remove_ntaxa_global_tree, remove.global.no.taxa, model="white")                 #aicc = 807.96
+
+remove_global_no_taxa_evo<-c(810.05, 807.96)
+names(remove_global_no_taxa_evo)<-c("lambda", "star")
+
+remove_global_aic_taxa <- tibble(aicc=remove_global_no_taxa_evo, model=names(remove_global_no_taxa_evo))
+
+remove_global_aic_taxa<-remove_global_aic_taxa %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+remove_global_aic_taxa
+
+```
+
+
+
+```{r evolutionary models for MPD, include = TRUE}
+
+###NEARCTIC DATASET####
+
+##testing model fit with fitContinuous
+
+#with single host species MPD = 0
+
+fitContinuous(nearctic_tree, nearctic.para.mpd, model="white") #aicc = 1023.17
+fitContinuous(nearctic_tree, nearctic.para.mpd, model="BM")    #aicc = 1039.03
+fitContinuous(nearctic_tree, nearctic.para.mpd, model="EB")    #aicc = 1041.17
+fitContinuous(nearctic_tree, nearctic.para.mpd, model="OU")    #aicc = 1024.50
+
+
+#with single host species MPD removed
+
+fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="white") #aicc = 791.72
+fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="BM")    #aicc = 782.63
+fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="EB")    #aicc = 784.82
+fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="OU")    #aicc = 778.47
+
+
+
+
+###GLOBAL DATASET####
+
+##testing model fit with fitContinuous
+
+#with single host species MPD = 0
+
+fitContinuous(global_tree, global.para.mpd, model="white") #aicc = 2529.33
+fitContinuous(global_tree, global.para.mpd, model="BM")    #aicc = 2591.33
+fitContinuous(global_tree, global.para.mpd, model="EB")    #aicc = 2593.37
+fitContinuous(global_tree, global.para.mpd, model="OU")    #aicc = 2544.85
+
+#with single host species MPD removed
+
+fitContinuous(remove_global_tree, global.para.mpd.remove, model="white") #aicc = 1324.64
+fitContinuous(remove_global_tree, global.para.mpd.remove, model="BM")    #aicc = 1313.46
+fitContinuous(remove_global_tree, global.para.mpd.remove, model="EB")    #aicc = 1315.56
+fitContinuous(remove_global_tree, global.para.mpd.remove, model="OU")    #aicc = 1295.24
+
+```
+
+
+
+```{r}
+
+```
+
