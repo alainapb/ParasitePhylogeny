@@ -69,14 +69,14 @@ plot(global_tree)
 
 ```{r load_nearctic_data, include = FALSE}
 #host-parasite association data
-nearctic_assoc_data<-read.csv("~/Desktop/Host_Range_Nearctic_Mammals_list.csv", header=T)
+nearctic_assoc_data<-read.csv("Host_Range_Nearctic_Mammals_list.csv", header=T)
 
 #change to characters instead of factors
 nearctic_assoc_data$Host<-as.character(nearctic_assoc_data$Host)
 nearctic_assoc_data$Parasite<-as.character(nearctic_assoc_data$Parasite)
 
 #parasite abundance/occurence data
-nearctic_abund_data<-read.csv("~/Desktop/Host_Range_Nearctic_Mammals.csv")
+nearctic_abund_data<-read.csv("Host_Range_Nearctic_Mammals.csv")
 
 #change to characters instead of factors
 nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
@@ -475,52 +475,6 @@ remove_global_aic_taxa
 
 
 
-Do not use (below) in the MS or include in the GitHub code
-```{r evolutionary_models_for_MPD, include = FALSE}
-
-###NEARCTIC DATASET####
-
-##testing model fit with fitContinuous
-
-#with single host species MPD = 0
-
-fitContinuous(nearctic_tree, nearctic.para.mpd, model="white") #aicc = 1023.17 **
-fitContinuous(nearctic_tree, nearctic.para.mpd, model="BM")    #aicc = 1039.03
-fitContinuous(nearctic_tree, nearctic.para.mpd, model="EB")    #aicc = 1041.17
-fitContinuous(nearctic_tree, nearctic.para.mpd, model="OU")    #aicc = 1024.50
-
-
-#with single host species MPD removed
-
-fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="white") #aicc = 791.72
-fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="BM")    #aicc = 782.63
-fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="EB")    #aicc = 784.82
-fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="OU")    #aicc = 778.47 **
-
-
-
-
-###GLOBAL DATASET####
-
-##testing model fit with fitContinuous
-
-#with single host species MPD = 0
-
-fitContinuous(global_tree, global.para.mpd, model="white") #aicc = 2529.33 **
-fitContinuous(global_tree, global.para.mpd, model="BM")    #aicc = 2591.33
-fitContinuous(global_tree, global.para.mpd, model="EB")    #aicc = 2593.37
-fitContinuous(global_tree, global.para.mpd, model="OU")    #aicc = 2544.85
-
-#with single host species MPD removed
-
-fitContinuous(remove_global_tree, global.para.mpd.remove, model="white") #aicc = 1324.64
-fitContinuous(remove_global_tree, global.para.mpd.remove, model="BM")    #aicc = 1313.46
-fitContinuous(remove_global_tree, global.para.mpd.remove, model="EB")    #aicc = 1315.56
-fitContinuous(remove_global_tree, global.para.mpd.remove, model="OU")    #aicc = 1295.24 **
-
-```
-
-
 
 ```{r Phylum_OU_models_for_MPD, include = TRUE}
 
@@ -842,8 +796,10 @@ remove.global.b.size <- b.size[match(remove_global_pgls$tip.label, b.size$Parasi
 
 
 
-#### adding in host trait data (mass.g) from Phylacine ####
-Trait_data <- read_csv("PHYLACINE_DATA/MegaPast2Future-PHYLACINE_1.2-975f93c/Data/Traits/Trait_data.csv")
+#### adding in host trait data (mass.g) from PHYLACINE ####
+#Faurby, S., Davis, M., Pedersen, R. Ø., Schowanek, S. D., Antonelli, A., & Svenning, J.C. (In Press). PHYLACINE 1.2: The Phylogenetic Atlas of Mammal Macroecology. Ecology
+#load mammal data
+Trait_data <- read_csv("Trait_data.csv")
 
 #correct for spaces in the binomial names
 Trait_data$Binomial.1.2<-gsub("_", " ", Trait_data$Binomial.1.2)
@@ -1154,31 +1110,14 @@ view(distances)
 #remove humans from distances
 distance2<-distances[names(distances) != "Homo sapiens"]
 
-# plot distances2 ~ global.mam.mpd
-plot(distance2 ~ global.mam.mpd)
-
-
+#make a dataframe for the figure 
 figure_data<-data.frame("name"= names(global.mam.mpd), "global.mpd" = global.mam.mpd, "distance"= distance2)
 
-figure_data %>%
-  separate(name, c("Genus", "species"), " ", remove= F) ->figure_data
-
+#species we want labeled in the figure
 important.names<-c("Macaca fuscata","Colobus angolensis","Ateles geoffroyi","Alouatta seniculus","Macaca cyclopis","Macaca fascicularis","Papio papio","Saguinus labiatus","Hylobates lar","Rhinopithecus bieti","Lemur catta","Prolemur simus","Mirounga angustirostris","Martes foina","Pan troglodytes","Gorilla beringei","Gorilla gorilla","Colobus angolensis","Pan paniscus","Pongo abelii", "Pongo pygmaeus","Saguinus mystax","Aotus nancymaae", "Cebus capucinus", "Saguinus midas", "Saimiri sciureus", "Saguinus fuscicollis", "Alouatta palliata")
 
+#make dataset for the to-be-labeled points
 smaller_data<- figure_data[figure_data$name %in% important.names,]
-
-#ggplot()+
-#  geom_point(figure_data, mapping=aes(x=global.mpd, y= distance), 
-#             alpha=0.5, 
-#             size =3)+
-#  geom_text_repel(smaller_data, mapping=aes(x=global.mpd, y=distance, label = name), 
-#                  size = 2, 
-#                  hjust = 0.5, 
-#                  vjust =.95, 
-#                  label.padding= 0.45)+
-#  labs(y= "PD to Humans", x = "MPD of a host's parasties")+
-#  theme_bw()
-
 
 ggplot()+
   geom_point(figure_data, mapping=aes(x=global.mpd, y= distance), 
@@ -1193,7 +1132,7 @@ ggplot()+
 
 
 
-####What helminths infect the "zoonotic" data point?####
+####What helminths infect the "high-risk" data point?####
 global_df %>%
   as.data.frame ->help
 
