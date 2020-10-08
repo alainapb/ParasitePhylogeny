@@ -17,11 +17,13 @@ library(geiger)
 library(caper)
 library(picante)
 library(pmc)
+library(corHMM)
+library(OUwie)
 
 ```
 
 
-```{r load in APBs helminth tree, include=FALSE}
+```{r load_in_APBs_helminth_tree, include=FALSE}
 
 ## load tree
 tree<-read.nexus("hel2_44burn_copy.trees")
@@ -65,7 +67,7 @@ plot(global_tree)
 
 
 
-```{r load nearctic data, include = FALSE}
+```{r load_nearctic_data, include = FALSE}
 #host-parasite association data
 nearctic_assoc_data<-read.csv("~/Desktop/Host_Range_Nearctic_Mammals_list.csv", header=T)
 
@@ -83,7 +85,7 @@ nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
 
 
 
-```{r load global data from GMPD, include =FALSE}
+```{r load_global_data_from_GMPD, include =FALSE}
 ## Read in GMPD data
 GMPDmain<-read.csv("GMPD_main.csv")
 GMPDparasite<-read.csv("GMPD_parasite_traits.csv")
@@ -96,7 +98,7 @@ GMPDsmall<-GMPDmain[GMPDmain$ParasiteCorrectedName %in% global_tree$tip.label, ]
 
 
 
-```{r mammal data from PHYLACINE, include=FALSE}
+```{r mammal_data_from_PHYLACINE, include=FALSE}
 ## load mammal tree from Phylacine data
 mam_tree<-read.nexus("mammal_phylo_consensus.nex") #load in consensus mammal tree to use as a response variable
 small_mam_tree<-read.nexus("Small_phylogeny_consensus.nex") #load in consensus small mammal tree
@@ -128,7 +130,8 @@ plot(GMPD_mammal_tree, cex=0.3)
 
 
 
-```{r calculate mpd for nearctic data, include= TRUE}
+
+```{r calculate_mpd_for_nearctic_data, include= TRUE}
 
 ##parasite: subset global tree to neartic data
 setdiff(global_tree$tip.label, nearctic_assoc_data$Parasite)->bye3
@@ -188,7 +191,8 @@ nearctic.mam.mpd.remove<-nearctic.mam.mpd.remove[!is.na(nearctic.mam.mpd.remove)
 
 
 
-```{r calculate mpd for GMPD data, include =TRUE}
+
+```{r calculate_mpd_for_GMPD_data, include =TRUE}
 ##calculate the mpd of parasites and hosts!
 global_dis_para<-cophenetic.phylo(global_tree) #interspecific distance matrix of parasites
 global_dis_mam<-cophenetic.phylo(GMPD_mammal_tree) #intespecific distance matrix of mammals from small tree
@@ -228,7 +232,8 @@ global.mam.mpd.remove<-global.mam.mpd.remove[!is.na(global.mam.mpd.remove)] ## h
 
 
 
-```{r check phylogenetic signal of MPD, include =TRUE}
+
+```{r check_phylogenetic_signal_of_MPD, include =TRUE}
 
 #### NEARCTIC DATASET ####
 
@@ -336,7 +341,8 @@ removed_global_aic_mpd
 
 
 
-```{r check phylogenetic signal of no. of hosts, include = TRUE}
+
+```{r check_phylogenetic_signal_of_number_of_hosts, include = TRUE}
 
 #### NEARCTIC DATASET ####
 
@@ -470,7 +476,8 @@ remove_global_aic_taxa
 
 
 
-```{r evolutionary models for MPD, include = TRUE}
+Do not use (below) in the MS or include in the GitHub code
+```{r evolutionary_models_for_MPD, include = FALSE}
 
 ###NEARCTIC DATASET####
 
@@ -478,7 +485,7 @@ remove_global_aic_taxa
 
 #with single host species MPD = 0
 
-fitContinuous(nearctic_tree, nearctic.para.mpd, model="white") #aicc = 1023.17
+fitContinuous(nearctic_tree, nearctic.para.mpd, model="white") #aicc = 1023.17 **
 fitContinuous(nearctic_tree, nearctic.para.mpd, model="BM")    #aicc = 1039.03
 fitContinuous(nearctic_tree, nearctic.para.mpd, model="EB")    #aicc = 1041.17
 fitContinuous(nearctic_tree, nearctic.para.mpd, model="OU")    #aicc = 1024.50
@@ -489,7 +496,7 @@ fitContinuous(nearctic_tree, nearctic.para.mpd, model="OU")    #aicc = 1024.50
 fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="white") #aicc = 791.72
 fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="BM")    #aicc = 782.63
 fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="EB")    #aicc = 784.82
-fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="OU")    #aicc = 778.47
+fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="OU")    #aicc = 778.47 **
 
 
 
@@ -500,7 +507,7 @@ fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="OU")    #ai
 
 #with single host species MPD = 0
 
-fitContinuous(global_tree, global.para.mpd, model="white") #aicc = 2529.33
+fitContinuous(global_tree, global.para.mpd, model="white") #aicc = 2529.33 **
 fitContinuous(global_tree, global.para.mpd, model="BM")    #aicc = 2591.33
 fitContinuous(global_tree, global.para.mpd, model="EB")    #aicc = 2593.37
 fitContinuous(global_tree, global.para.mpd, model="OU")    #aicc = 2544.85
@@ -510,13 +517,716 @@ fitContinuous(global_tree, global.para.mpd, model="OU")    #aicc = 2544.85
 fitContinuous(remove_global_tree, global.para.mpd.remove, model="white") #aicc = 1324.64
 fitContinuous(remove_global_tree, global.para.mpd.remove, model="BM")    #aicc = 1313.46
 fitContinuous(remove_global_tree, global.para.mpd.remove, model="EB")    #aicc = 1315.56
-fitContinuous(remove_global_tree, global.para.mpd.remove, model="OU")    #aicc = 1295.24
+fitContinuous(remove_global_tree, global.para.mpd.remove, model="OU")    #aicc = 1295.24 **
 
 ```
 
 
 
-```{r}
+```{r Phylum_OU_models_for_MPD, include = TRUE}
+
+###NEARCTIC DATASET####
+
+##with single host species MPD = 0
+
+#match GMPD data to the nearctic tree (to get Phyla classifications)
+g<-GMPDsmall[match(nearctic_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
+
+#make Phyla dataframe for OUwie (names, regimes, trait)
+nearctic_phyla_data<-data.frame(nearctic_tree$tip.label)
+nearctic_phyla_data$regime<-g$ParPhylum
+nearctic_phyla_data$trait<-nearctic.para.mpd
+
+# estimate the regimes for internal nodes uses "corHMM",
+# uses a single rate model of evolution and marginal reconstruction of ancestral states
+p1<-rayDISC(nearctic_tree, nearctic_phyla_data[,c(1,2)], model="ER", node.states="marginal")
+
+# test regime models (1 = Acanthocephala, 2 = Nematoda , 3= Platy)
+OUwie(p1$phy, nearctic_phyla_data, model="BM1") #random   == aicc = 1047.46 , optima = 69.80
+OUwie(p1$phy, nearctic_phyla_data, model="OU1") #1 regime == aicc = 1017.68, optima = 71.73
+OUwie(p1$phy, nearctic_phyla_data, model="OUM") #3 regime == aicc = 1015.56, o1 = 133.98, o2 = 41.95, o3 = 95.13
+OUwie(p1$phy, nearctic_phyla_data, model="OUMV")#3 reg +  == aicc = 1006.09, o1 = 134.01, o2 = 41.46, o3 = 95.40
+## fitContinuous(nearctic_tree, nearctic.para.mpd, model="OU")    #aicc = 1024.50
+
+##with single host species MPD removed
+
+#match GMPD data to the remove_nearctic tree (to get Phyla classifications)
+h<-GMPDsmall[match(remove_nearctic_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
+
+#make Phyla dataframe for OUwie (names, regimes, trait)
+remove_nearctic_phyla_data<-data.frame(remove_nearctic_tree$tip.label)
+remove_nearctic_phyla_data$regime<-h$ParPhylum
+remove_nearctic_phyla_data$trait<-nearctic.para.mpd.remove
+
+# estimate the regimes for internal nodes uses "corHMM",
+# uses a single rate model of evolution and marginal reconstruction of ancestral states
+p2<-rayDISC(remove_nearctic_tree, remove_nearctic_phyla_data[,c(1,2)], model="ER", node.states="marginal")
+
+# test regime models (1 = Acanthocephala, 2 = Nematoda , 3= Platy)
+OUwie(p2$phy, remove_nearctic_phyla_data, model="BM1") #random   == aicc = 806.17, optima = 103.51
+OUwie(p2$phy, remove_nearctic_phyla_data, model="OU1") #1 regime == aicc = 778.44, optima = 99.24
+OUwie(p2$phy, remove_nearctic_phyla_data, model="OUM") #3 regime == aicc = 770.35, o1 = 201.01, o2 = 52.88, o3 = 119.40
+OUwie(p2$phy, remove_nearctic_phyla_data, model="OUMV")#3 reg +  == aicc = 772.36, o1 = 201.01, o2 = 52.88, o3 = 119.40
+
+
+
+###GLOBAL DATASET####
+
+#with single host species MPD = 0
+
+#match GMPD data to the global tree
+k<-GMPDsmall[match(global_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
+
+#make Phyla dataframe for OUwie (names, regimes, trait)
+global_phyla_data<-data.frame(global_tree$tip.label)
+global_phyla_data$regime<-k$ParPhylum
+global_phyla_data$trait<-global.para.mpd
+
+# estimate the regimes for internal nodes uses "corHMM",
+# uses a single rate model of evolution and marginal reconstruction of ancestral states
+p3<-rayDISC(global_tree, global_phyla_data[,c(1,2)], model="ER", node.states="marginal")
+
+# test regime models (1 = Acanthocephala, 2 = Nematoda , 3= Platy)
+OUwie(p3$phy, global_phyla_data, model="BM1") #random   == aicc = 2338.74, optima = 31.499
+OUwie(p3$phy, global_phyla_data, model="OU1") #1 regime == aicc = 2506.13, optima = 32.107
+OUwie(p3$phy, global_phyla_data, model="OUM") #3 regime == aicc = 2500.93, o1 = 25.48, o2 = 19.59, o3 = 47.34
+OUwie(p3$phy, global_phyla_data, model="OUMV")#3 reg +  == aicc = 2490.71, o1 = 25.37, o2 = 19.35, o3 = 47.38
+
+
+##with single host species MPD removed
+
+#match GMPD data to the remove_global tree
+l<-GMPDsmall[match(remove_global_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
+
+#make Phyla dataframe for OUwie (names, regimes, trait)
+remove_global_phyla_data<-data.frame(remove_global_tree$tip.label)
+remove_global_phyla_data$regime<-l$ParPhylum
+remove_global_phyla_data$trait<-global.para.mpd.remove
+
+# estimate the regimes for internal nodes uses "corHMM",
+# uses a single rate model of evolution and marginal reconstruction of ancestral states
+p4<-rayDISC(remove_global_tree, remove_global_phyla_data[,c(1,2)], model="ER", node.states="marginal")
+
+# test regime models (1 = Acanthocephala, 2 = Nematoda , 3= Platy)
+OUwie(p4$phy, remove_global_phyla_data, model="BM1") #random   == aicc = 1315.13, optima = 69.46
+OUwie(p4$phy, remove_global_phyla_data, model="OU1") #1 regime == aicc = 1288.92, optima = 56.09
+OUwie(p4$phy, remove_global_phyla_data, model="OUM") #3 regime == aicc = 1290.90, o1 = 62.50, o2 = 40.78, o3 = 70.20
+OUwie(p4$phy, remove_global_phyla_data, model="OUMV")#3 reg +  == aicc = 1300.48, o1 = 62.50, o2 = 40.72, o3 = 70.29
+
+
+```
+
+
+
+
+```{r Class_OU_models_for_MPD, include = TRUE}
+
+###NEARCTIC DATASET####
+
+##with single host species MPD = 0
+
+#make Class dataframe for OUwie (names, regimes, trait)
+nearctic_class_data<-data.frame(nearctic_tree$tip.label)
+nearctic_class_data$regime<-g$ParClass
+nearctic_class_data$trait<-nearctic.para.mpd
+
+# estimate the regimes for internal nodes uses "corHMM",
+# uses a single rate model of evolution and marginal reconstruction of ancestral states
+p5<-rayDISC(nearctic_tree, nearctic_class_data[,c(1,2)], model="ER", node.states="marginal")
+
+# test regime models (1 = Archiacanthocephala, 2 = Cestoda, 3 = Enoplea, 4 = Palaeacanthocephala, 5 = Secernentea, 6 = Trematoda )
+OUwie(p5$phy, nearctic_class_data, model="BM1") #random   == aicc = 1047.46, optima = 69.80
+OUwie(p5$phy, nearctic_class_data, model="OU1") #1 regime == aicc = 1017.68, optima = 71.73
+OUwie(p5$phy, nearctic_class_data, model="OUM") #6 regime == aicc = 1027.05, o1 = 180.02, o2 = 97.10, o3 = 77.58, o4 = 111.01, o5 = 34.04, o6 = 92.06
+OUwie(p5$phy, nearctic_class_data, model="OUMV")#6 reg +  == aicc = 1015.65, o1 = 180.02, o2 = 97.10, o3 = 77.60, o4 = 111.01, o5 = 34.02, o6 = 92.06
+
+
+##with single host species MPD removed
+
+#make Class dataframe for OUwie (names, regimes, trait)
+remove_nearctic_class_data<-data.frame(remove_nearctic_tree$tip.label)
+remove_nearctic_class_data$regime<-h$ParClass
+remove_nearctic_class_data$trait<-nearctic.para.mpd.remove
+
+# estimate the regimes for internal nodes uses "corHMM",
+# uses a single rate model of evolution and marginal reconstruction of ancestral states
+p6<-rayDISC(remove_nearctic_tree, remove_nearctic_class_data[,c(1,2)], model="ER", node.states="marginal")
+
+# test regime models (1 = Archiacanthocephala, 2 = Cestoda, 3 = Enoplea, 4 = Palaeacanthocephala, 5 = Secernentea, 6 = Trematoda)
+OUwie(p6$phy, remove_nearctic_class_data, model="BM1") #random   == aicc = 806.17 , optima = 103.51
+OUwie(p6$phy, remove_nearctic_class_data, model="OU1") #1 regime == aicc = 778.44, optima = 99.24
+OUwie(p6$phy, remove_nearctic_class_data, model="OUM") #6 regime == aicc = 784.39, o1 = 180.02, o2 = 116.52, o3 = 77.65, o4 = 222.00, o5 = 46.28, o6 = 126.59
+OUwie(p6$phy, remove_nearctic_class_data, model="OUMV")#6 reg +  == aicc = 791.26, o1 = 180.02, o2 = 116.53, o3 = 77.64, o4 = 222.00, o5 = 46.27, o6 = 126.58
+
+
+###GLOBAL DATASET####
+
+#with single host species MPD = 0
+
+#make Class dataframe for OUwie (names, regimes, trait)
+global_class_data<-data.frame(global_tree$tip.label)
+global_class_data$regime<-k$ParClass
+global_class_data$trait<-global.para.mpd
+
+# estimate the regimes for internal nodes uses "corHMM",
+# uses a single rate model of evolution and marginal reconstruction of ancestral states
+p7<-rayDISC(global_tree, global_class_data[,c(1,2)], model="ER", node.states="marginal")
+
+# test regime models (1 = Archiacanthocephala, 2 = Cestoda, 3 = Enoplea, 4 = Mongenea, 5 = Palaeacanthocephala, 6 = Secernentea, 7 = Trematoda)
+OUwie(p7$phy, global_class_data, model="BM1") #random   == aicc = 2338.74, optima = 31.499
+OUwie(p7$phy, global_class_data, model="OU1") #1 regime == aicc = 2506.13, optima = 32.107
+OUwie(p7$phy, global_class_data, model="OUM") #7 regime == aicc = 2501.31, o1 = 37.47, o2 = 53.65, o3 = 47.78, o4 =  7.48, o5 = 17.29, o6 = 14.88, o7 = 47.74
+OUwie(p7$phy, global_class_data, model="OUMV")#7 reg +  == aicc = 2469.18, o1 = 37.33, o2 = 52.97, o3 = 50.62, o4 = 18.63, o5 = 19.06, o6 = 14.47, o7 = 43.77
+
+
+##with single host species MPD removed
+
+#make Class dataframe for OUwie (names, regimes, trait)
+remove_global_class_data<-data.frame(remove_global_tree$tip.label)
+remove_global_class_data$regime<-l$ParClass
+remove_global_class_data$trait<-global.para.mpd.remove
+
+# estimate the regimes for internal nodes uses "corHMM",
+# uses a single rate model of evolution and marginal reconstruction of ancestral states
+p8<-rayDISC(remove_global_tree, remove_global_class_data[,c(1,2)], model="ER", node.states="marginal")
+
+# test regime models (1 = Archiacanthocephala, 2 = Cestoda, 3 = Enoplea, 4 = Palaeacanthocephala, 5 = Secernentea, 6 = Trematoda)
+OUwie(p8$phy, remove_global_class_data, model="BM1") #random   == aicc = 1315.13, optima = 69.46
+OUwie(p8$phy, remove_global_class_data, model="OU1") #1 regime == aicc = 1288.92, optima = 56.09
+OUwie(p8$phy, remove_global_class_data, model="OUM") #6 regime == aicc = 1300.90, o1 = 74.44, o2 = 70.71, o3 = 72.92, o4 = 27.21, o5 = 58.40, o6 = 70.40
+OUwie(p8$phy, remove_global_class_data, model="OUMV")#6 reg +  == aicc = 1320.44, o1 = 70.77, o2 = 72.97, o3 = 94.24, o4 = 22.01, o5 = 62.68, o6 = 64.55
+
+```
+
+
+
+
+```{r OU_summary_tables, echo=TRUE}
+
+###NEARCTIC DATASET####
+
+##with single host species MPD = 0
+
+nearctic_OU<-c(1047.46, 1017.68, 1015.56, 1006.09, 1027.05, 1015.65)
+names(nearctic_OU)<-c("BM", "OU", "OU-Phyla", "OU-Phyla-s2", "OU-Class", "OU-Class-s2")
+
+nearctic_aic_OU <- tibble(aicc=nearctic_OU, model=names(nearctic_OU))
+
+nearctic_aic_OU<-nearctic_aic_OU %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+nearctic_aic_OU
+
+##with single host species removed
+
+remove_nearctic_OU<-c(806.17, 778.44, 770.35, 772.36, 784.39, 791.26)
+names(remove_nearctic_OU)<-c("BM", "OU", "OU-Phyla", "OU-Phyla-s2", "OU-Class", "OU-Class-s2")
+
+remove_nearctic_aic_OU <- tibble(aicc=remove_nearctic_OU, model=names(remove_nearctic_OU))
+
+remove_nearctic_aic_OU<-remove_nearctic_aic_OU %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+remove_nearctic_aic_OU
+
+###GLOBAL DATASET####
+
+#with single host species MPD = 0
+
+global_OU<-c(2338.74, 2506.13, 2500.93, 2490.71, 2501.31, 2469.18)
+names(global_OU)<-c("BM", "OU", "OU-Phyla", "OU-Phyla-s2", "OU-Class", "OU-Class-s2")
+
+global_aic_OU <- tibble(aicc=global_OU, model=names(global_OU))
+
+global_aic_OU<-global_aic_OU %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+global_aic_OU
+
+##with single host species removed
+
+remove_global_OU<-c(1315.13, 1288.92, 1290.90,1300.48, 1300.90, 1320.44)
+names(remove_global_OU)<-c("BM", "OU", "OU-Phyla", "OU-Phyla-s2", "OU-Class", "OU-Class-s2")
+
+remove_global_aic_OU <- tibble(aicc=remove_global_OU, model=names(remove_global_OU))
+
+remove_global_aic_OU<-remove_global_aic_OU %>% 
+  mutate(deltaaicc=aicc-min(aicc), 
+         pow=exp(-.5*deltaaicc),
+         sumpow=sum(pow),
+         waicc=pow/sumpow) %>%
+  dplyr::select(c(2,1,3,6)) %>%
+  arrange(desc(waicc))
+
+remove_global_aic_OU
+
+
+```
+
+
+
+
+```{r adding_and_cleaning_host_and_parasite_trait_data, echo = TRUE}
+
+
+#### Load parasite body size data from Benesh, Lafferty, and Kuris 2017 ####
+## Length and width measurments are in mm 
+benesh_data_para<- read_csv("Benesh_et_al_2017/ecy1680-sup-0001-datas1/CLC_database_lifehistory.csv")
+benesh_data_para$Host.species <-gsub(" ", "_", benesh_data_para$Host.species)
+
+## remove parasites from Benesh et al. dataset that don't exist in the phylogeny
+setdiff(benesh_data_para$Parasite.species, GMPDsmall$ParasiteCorrectedName)->nothanks
+benesh_data_para[-which(benesh_data_para$Parasite.species %in% nothanks) ,] -> b_para_subset
+
+## average the body size for rows that are the same species
+subset(b_para_subset, Sex=="f") %>%
+  group_by(Parasite.species) %>%
+  summarise(mean_l=mean(Length, na.rm = TRUE)) ->data_fem_len
+
+subset(b_para_subset, Sex=="f") %>%
+  group_by(Parasite.species) %>%
+  summarise(mean_w=mean(Width, na.rm = TRUE)) ->data_fem_wid
+
+## combine length and width in a meaningful way to calculate 'body size' (L*W)?
+b.size<-left_join(data_fem_len, data_fem_wid, by="Parasite.species")
+b.size$ratio<-(b.size$mean_l*b.size$mean_w)
+
+write.csv(b.size, "bodysizepara.csv")
+
+
+#### Trim the tree to include only those parasite species for which there is body size data ####
+
+##nearctic mpd, single host = 0 
+setdiff(nearctic_tree$tip.label, b.size$Parasite.species)->no_body_size 
+nearctic_pgls <- drop.tip(nearctic_tree, nearctic_tree$tip.label[which(nearctic_tree$tip.label%in%no_body_size)])
+
+# make sure body size is in the same order as the parasite phylogeny
+nearctic.b.size <- b.size[match(nearctic_pgls$tip.label, b.size$Parasite.species),]
+
+
+##nearctic mpd, single host removed 
+setdiff(remove_nearctic_tree$tip.label, b.size$Parasite.species)->no_body_size1 
+remove_nearctic_pgls <- drop.tip(remove_nearctic_tree, remove_nearctic_tree$tip.label[which(remove_nearctic_tree$tip.label%in%no_body_size1)])
+
+# make sure body size is in the same order as the parasite phylogeny
+remove.nearctic.b.size <- b.size[match(remove_nearctic_pgls$tip.label, b.size$Parasite.species),]
+
+
+##global mpd, single host = 0 
+setdiff(global_tree$tip.label, b.size$Parasite.species)->no_body_size2 
+global_pgls <- drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%no_body_size2)])
+
+# make sure body size is in the same order as the parasite phylogeny
+global.b.size <- b.size[match(global_pgls$tip.label, b.size$Parasite.species),]
+
+##global mpd, single host removed
+setdiff(remove_global_tree$tip.label, b.size$Parasite.species)->no_body_size3 
+remove_global_pgls <- drop.tip(remove_global_tree, remove_global_tree$tip.label[which(remove_global_tree$tip.label%in%no_body_size3)])
+
+# make sure body size is in the same order as the parasite phylogeny
+remove.global.b.size <- b.size[match(remove_global_pgls$tip.label, b.size$Parasite.species),]
+
+
+
+#### adding in host trait data (mass.g) from Phylacine ####
+Trait_data <- read_csv("PHYLACINE_DATA/MegaPast2Future-PHYLACINE_1.2-975f93c/Data/Traits/Trait_data.csv")
+
+#correct for spaces in the binomial names
+Trait_data$Binomial.1.2<-gsub("_", " ", Trait_data$Binomial.1.2)
+
+#make column called "Host" in Trait_data
+Trait_data$HostCorrectedName<-Trait_data$Binomial.1.2
+
+#merge 
+left_join(GMPDsmall, Trait_data, by = "HostCorrectedName")->ss
+host_trait_data<-data.frame("Parasite" = ss$ParasiteCorrectedName,"Host" = ss$HostCorrectedName, "Mass.g" = ss$Mass.g)
+
+
+host_trait_data %>% 
+  group_by(Parasite) %>% 
+  summarise(avgMass=mean(Mass.g,na.rm=T)) -> Host_mass
+
+
+##subset host data for each group
+
+#nearctic with single hosts = 0
+setdiff(Host_mass$Parasite, nearctic_pgls$tip.label)-> getout
+nearctic_traits<-Host_mass[-which(Host_mass$Parasite %in% getout),]
+#put in tree tip label order
+nearctic_traits <- nearctic_traits[match(nearctic_pgls$tip.label, nearctic_traits$Parasite),]
+
+
+#nearctic with single hosts removed
+setdiff(Host_mass$Parasite, remove_nearctic_pgls$tip.label)-> getout1
+remove_nearctic_traits<-Host_mass[-which(Host_mass$Parasite %in% getout1),]
+#put in tree tip label order
+remove_nearctic_traits <- remove_nearctic_traits[match(remove_nearctic_pgls$tip.label, remove_nearctic_traits$Parasite),]
+
+
+#global with single hosts = 0
+global_traits<-Host_mass
+#put in tree tip label order
+global_traits <- global_traits[match(global_pgls$tip.label, global_traits$Parasite),]
+
+
+#global with single hosts removed
+setdiff(Host_mass$Parasite, remove_global_pgls$tip.label)-> getout2
+remove_global_traits<-Host_mass[-which(Host_mass$Parasite %in% getout2),]
+#put in tree tip label order
+remove_global_traits <- remove_global_traits[match(remove_global_pgls$tip.label, remove_global_traits$Parasite),]
+
+
+#### clean parasite transmission data ####
+
+#nearctic with single hosts = 0
+nearctic_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% nearctic_pgls$tip.label),]
+nearctic_trans<-nearctic_trans[match(nearctic_pgls$tip.label, nearctic_trans$CorrectName),]
+
+#neartic with single species removed
+remove_nearctic_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% remove_nearctic_pgls$tip.label),]
+remove_nearctic_trans<-remove_nearctic_trans[match(remove_nearctic_pgls$tip.label, remove_nearctic_trans$CorrectName),]
+
+
+#global with single hosts = 0
+global_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% global_pgls$tip.label),]
+global_trans<-global_trans[match(global_pgls$tip.label, global_trans$CorrectName),]
+
+#global with single species removed
+remove_global_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% remove_global_pgls$tip.label),]
+remove_global_trans<-remove_global_trans[match(remove_global_pgls$tip.label, remove_global_trans$CorrectName),]
+
+```
+
+
+
+
+```{r pgls_nearctic_sh0, include = FALSE}
+
+###NEARCTIC DATASET####
+
+##with single host species MPD = 0
+
+#clean nearctic.mam.mpd
+pgls.nearctic.para.mpd<-nearctic.para.mpd[match(nearctic_pgls$tip.label, names(nearctic.para.mpd))]
+
+nearctic_dat<-data.frame(taxa=nearctic_pgls$tip.label,
+                para.mpd=pgls.nearctic.para.mpd,
+                para.l=nearctic.b.size$mean_l,
+                para.w=nearctic.b.size$mean_w,
+                para.b=nearctic.b.size$ratio,
+                close=as.factor(nearctic_trans$close),
+                nonclose=as.factor(nearctic_trans$nonclose),
+                intermediate=as.factor(nearctic_trans$intermediate),
+                host_mass=nearctic_traits$avgMass)
+
+## constructs the data.frame of the taxa names and data in the order of the tree tips
+nearctic_cdat<-comparative.data(data=nearctic_dat, phy=nearctic_pgls, names.col = "taxa")
+print(nearctic_cdat)
+
+## model testing ##
+
+#all predictors
+nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, nearctic_cdat, lambda = .384)
+summary(nearctic_mod)
+anova(nearctic_mod)
+
+#removed parasite length
+nearctic_mod2<-pgls(para.mpd ~ close + nonclose + intermediate + host_mass, nearctic_cdat, lambda=.384) #host mass is significant
+summary(nearctic_mod2)
+anova(nearctic_mod2)
+
+#removed parasite length and close transmission
+nearctic_mod3<-pgls(para.mpd ~ nonclose + intermediate + host_mass, nearctic_cdat, lambda=.384) 
+summary(nearctic_mod3)
+anova(nearctic_mod3)
+```
+
+
+
+
+```{r pgls_nearctic_shR, include=FALSE}
+###NEARCTIC DATASET####
+
+##with single host species removed
+
+#clean nearctic.mam.mpd
+pgls.remove.n.para.mpd<-nearctic.para.mpd[match(remove_nearctic_pgls$tip.label, names(nearctic.para.mpd.remove))]
+
+remove_nearctic_dat<-data.frame(taxa=remove_nearctic_pgls$tip.label,
+                para.mpd=pgls.remove.n.para.mpd,
+                para.l=remove.nearctic.b.size$mean_l,
+                para.w=remove.nearctic.b.size$mean_w,
+                para.b=remove.nearctic.b.size$ratio,
+                close=as.factor(remove_nearctic_trans$close),
+                nonclose=as.factor(remove_nearctic_trans$nonclose),
+                intermediate=as.factor(remove_nearctic_trans$intermediate),
+                host_mass=remove_nearctic_traits$avgMass)
+
+## constructs the data.frame of the taxa names and data in the order of the tree tips
+remove_nearctic_cdat<-comparative.data(data=remove_nearctic_dat, phy=remove_nearctic_pgls, names.col = "taxa")
+print(remove_nearctic_cdat)
+
+## model testing ##
+
+#all predictors 
+remove_nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_nearctic_cdat, lambda = .926)
+summary(remove_nearctic_mod)
+anova(remove_nearctic_mod)
+
+#removed close tranmsission
+remove_nearctic_mod2<-pgls(para.mpd~ para.l + nonclose + intermediate + host_mass, remove_nearctic_cdat, lambda = .926)
+summary(remove_nearctic_mod2) #worse model than ^^^
+anova(remove_nearctic_mod2)
+
+
+#removed parasite length and close transmission
+remove_nearctic_mod3<-pgls(para.mpd~ nonclose + intermediate + host_mass, remove_nearctic_cdat, lambda = .926)
+summary(remove_nearctic_mod3) #worse model than ^^^
+anova(remove_nearctic_mod3)
+
+```
+
+
+
+
+```{r pgls_global_sh0, include=FALSE}
+
+###GLOBAL DATASET####
+
+##with single host species MPD = 0
+
+#clean global.mam.mpd
+pgls.global.para.mpd<-global.para.mpd[match(global_pgls$tip.label, names(global.para.mpd))]
+
+global_dat<-data.frame(taxa=global_pgls$tip.label,
+                para.mpd=pgls.global.para.mpd,
+                para.l=global.b.size$mean_l,
+                para.w=global.b.size$mean_w,
+                para.b=global.b.size$ratio,
+                close=as.factor(global_trans$close),
+                nonclose=as.factor(global_trans$nonclose),
+                intermediate=as.factor(global_trans$intermediate),
+                host_mass=global_traits$avgMass)
+
+## constructs the data.frame of the taxa names and data in the order of the tree tips
+global_cdat<-comparative.data(data=global_dat, phy=global_pgls, names.col = "taxa")
+print(global_cdat)
+
+## model testing ##
+
+#all predictors
+global_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, global_cdat, lambda = .698)
+summary(global_mod)
+anova(global_mod)
+
+#removed host mass
+global_mod2 <- pgls(para.mpd~ para.l + close + nonclose + intermediate, global_cdat, lambda = .698)
+summary(global_mod2)
+anova(global_mod2)
+
+
+#removed intermediate transmission and host mass
+global_mod3 <- pgls(para.mpd~ para.l + close + nonclose, global_cdat, lambda = .698)
+summary(global_mod3) 
+anova(global_mod3)
+
+#only parasite length and close transmission
+global_mod4<-pgls(para.mpd ~ para.l + close, global_cdat, lambda = .698)
+summary(global_mod4) 
+anova(global_mod4)
+
+#only close transmission
+global_mod5<-pgls(para.mpd ~ close, global_cdat, lambda = .698)
+summary(global_mod5) 
+anova(global_mod5)
+
+
+```
+
+
+
+
+```{r pgls_global_shR, include = FALSE}
+###GLOBAL DATASET####
+
+##with single host species removed
+
+#clean nearctic.mam.mpd
+pgls.remove.g.para.mpd<-global.para.mpd[match(remove_global_pgls$tip.label, names(global.para.mpd.remove))]
+
+remove_global_dat<-data.frame(taxa=remove_global_pgls$tip.label,
+                para.mpd=pgls.remove.g.para.mpd,
+                para.l=remove.global.b.size$mean_l,
+                para.w=remove.global.b.size$mean_w,
+                para.b=remove.global.b.size$ratio,
+                close=as.factor(remove_global_trans$close),
+                nonclose=as.factor(remove_global_trans$nonclose),
+                intermediate=as.factor(remove_global_trans$intermediate),
+                host_mass=remove_global_traits$avgMass)
+
+## constructs the data.frame of the taxa names and data in the order of the tree tips
+remove_global_cdat<-comparative.data(data=remove_global_dat, phy=remove_global_pgls, names.col = "taxa")
+print(remove_global_cdat)
+
+## model testing ##
+
+#all predictors
+remove_global_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_global_cdat, lambda = .808)
+summary(remove_global_mod)
+anova(remove_global_mod)
+
+#removed nonclose transmission
+remove_global_mod2 <- pgls(para.mpd~ para.l + close + intermediate + host_mass, remove_global_cdat, lambda = .808)
+summary(remove_global_mod2)
+anova(remove_global_mod2)
+
+#removed nonclose and host mass
+remove_global_mod3 <- pgls(para.mpd~ para.l + close + intermediate, remove_global_cdat, lambda = .808)
+summary(remove_global_mod3)
+anova(remove_global_mod3)
+
+#just parasite length
+remove_global_mod4 <- pgls(para.mpd~ para.l, remove_global_cdat, lambda = .808)
+summary(remove_global_mod4)
+anova(remove_global_mod4)
+
+
+```
+
+
+
+
+```{r mammal_tree_with_host_mpd, echo = TRUE}
+
+#### NEARCTIC DATASET ####
+
+#single parasite species have mpd = 0
+contMap(nearctic_mammal_tree, nearctic.mam.mpd, fsize=0.3, lwd =1)
+
+
+#### GLOBAL DATASET ####
+
+#single parasite species have mpd = 0
+contMap(GMPD_mammal_tree, global.mam.mpd, fsize=0.3, lwd =1, type ="fan")
+
+
+```
+
+
+
+
+```{r zoonoses_figure, echo=FALSE}
+
+#### Calulate pairwise distance (PD) of each mammal to homo sapiens ####
+
+#subset PHYLACINE mammal tree to include GMPD mammals
+setdiff(small_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->group2
+
+#add back the humans
+group3 <- group2[group2 != "Homo sapiens"]
+
+#subset the tree
+mammal_tree<-drop.tip(small_mam_tree, small_mam_tree$tip.label[which(small_mam_tree$tip.label%in%group3)])
+
+#calculate the pairwise distances
+mam_dis<-cophenetic.phylo(mammal_tree)
+
+#pull out the PD for each mammal to humans
+mam_dis2 = as.data.frame(mam_dis)
+distances<-mam_dis2[,"Homo sapiens"]
+names(distances)<-rownames(mam_dis2)
+view(distances)
+
+#remove humans from distances
+distance2<-distances[names(distances) != "Homo sapiens"]
+
+# plot distances2 ~ global.mam.mpd
+plot(distance2 ~ global.mam.mpd)
+
+
+figure_data<-data.frame("name"= names(global.mam.mpd), "global.mpd" = global.mam.mpd, "distance"= distance2)
+
+figure_data %>%
+  separate(name, c("Genus", "species"), " ", remove= F) ->figure_data
+
+important.names<-c("Macaca fuscata","Colobus angolensis","Ateles geoffroyi","Alouatta seniculus","Macaca cyclopis","Macaca fascicularis","Papio papio","Saguinus labiatus","Hylobates lar","Rhinopithecus bieti","Lemur catta","Prolemur simus","Mirounga angustirostris","Martes foina","Pan troglodytes","Gorilla beringei","Gorilla gorilla","Colobus angolensis","Pan paniscus","Pongo abelii", "Pongo pygmaeus","Saguinus mystax","Aotus nancymaae", "Cebus capucinus", "Saguinus midas", "Saimiri sciureus", "Saguinus fuscicollis", "Alouatta palliata")
+
+smaller_data<- figure_data[figure_data$name %in% important.names,]
+
+#ggplot()+
+#  geom_point(figure_data, mapping=aes(x=global.mpd, y= distance), 
+#             alpha=0.5, 
+#             size =3)+
+#  geom_text_repel(smaller_data, mapping=aes(x=global.mpd, y=distance, label = name), 
+#                  size = 2, 
+#                  hjust = 0.5, 
+#                  vjust =.95, 
+#                  label.padding= 0.45)+
+#  labs(y= "PD to Humans", x = "MPD of a host's parasties")+
+#  theme_bw()
+
+
+ggplot()+
+  geom_point(figure_data, mapping=aes(x=global.mpd, y= distance), 
+             alpha=0.5, 
+             size =3)+
+  geom_text_repel(smaller_data, mapping=aes(x=global.mpd, y=distance, label = name),
+                  size=2,
+                  vjust = .4,
+                  point.padding = .1)+
+  labs(y= "PD to Humans", x = "MPD of a host's parasties")+
+  theme_bw()
+
+
+
+####What helminths infect the "zoonotic" data point?####
+global_df %>%
+  as.data.frame ->help
+
+#Cebus capucinus infected by two
+help$'Cebus capucinus' #210 and 249
+help[210,] #Hymenolepis diminuta
+help[249,] #Prosthenorchis elegans
+
+#Aotus nancymaae infected by two
+help$'Aotus nancymaae' == 1  #210 and 249 (Prosthenorchis elegans)
+help[210,] #Hymenolepis diminuta
+
+
+#Saguinus midas infected by two
+help$'Saguinus midas' == 1 #27 and 249 (Prosthenorchis elegans)
+help[27,] #Dipetalonema graciliformis
+
+#Saimiri sciureus infected by two
+help$'Saimiri sciureus' == 1 #40 and 249 (Prosthenorchis elegans)
+help[40,] #Mansonella mariae
+
+#Saguinus fuscicollis infected by two
+help$'Saguinus fuscicollis' == 1 #164 and 249 (Prosthenorchis elegans)
+help[164,] #Trichuris trichiura
+
+
+#Alouatta palliata infected by two
+help$'Alouatta palliata' == 1  #55 and 249 (Prosthenorchis elegans)
+help[55,] #Trypanoxyuris minutus
+
+
+
 
 ```
 
