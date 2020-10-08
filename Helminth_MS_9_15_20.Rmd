@@ -100,7 +100,6 @@ GMPDsmall<-GMPDmain[GMPDmain$ParasiteCorrectedName %in% global_tree$tip.label, ]
 
 ```{r mammal_data_from_PHYLACINE, include=FALSE}
 ## load mammal tree from Phylacine data
-mam_tree<-read.nexus("mammal_phylo_consensus.nex") #load in consensus mammal tree to use as a response variable
 small_mam_tree<-read.nexus("Small_phylogeny_consensus.nex") #load in consensus small mammal tree
 #this tree is supposed to be more accurate, but may have less data (seems to have 2 less species of mammals)
 small_mam_tree$tip.label <-gsub("_", " ", small_mam_tree$tip.label)
