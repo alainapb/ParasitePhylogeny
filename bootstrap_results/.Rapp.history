@@ -1,0 +1,2 @@
+load("/Users/alaina_pb/Desktop/bootstrap_results/fit_bm_model_to_bm_data_global.RDS")
+load("/Users/alaina_pb/Desktop/bootstrap_results/fit_bm_model_to_oum_data_nearctic.RDS")
