@@ -107,6 +107,15 @@ small_mam_tree<-read.nexus("Small_phylogeny_consensus.nex") #load in consensus s
 #this tree is supposed to be more accurate, but may have less data (seems to have 2 less species of mammals)
 small_mam_tree$tip.label <-gsub("_", " ", small_mam_tree$tip.label)
 
+
+##load complete mammal tree from Faurby et al. 
+large_mam_tree<-read.nexus("mammal_phylo_consensus.nex")
+
+
+large_mam_tree$tip.label<-gsub("_", " ", large_mam_tree$tip.label)
+
+setdiff(GMPDsmall$HostCorrectedName, large_mam_tree$tip.label)
+
 #### Make sure host names in the GMPD match host names in the PHYLACINE tree ####
 
 #check the differences
@@ -125,7 +134,20 @@ GMPDsmall$HostCorrectedName<-gsub("Cercopithecus lhoesti","Allochrocebus lhoesti
 
 GMPDsmall$HostCorrectedName<-gsub("Equus caballus","Equus ferus", GMPDsmall$HostCorrectedName)
 
-small_mam_tree$tip.label<-gsub("Neomonachus schauinslandi", "Monachus schauinslandi", small_mam_tree$tip.label)
+GMPDsmall$HostCorrectedName<-gsub("Lama glama","Lama guanicoe", GMPDsmall$HostCorrectedName)
+
+GMPDsmall$HostCorrectedName<-gsub("Bos frontalis","Bos gaurus", GMPDsmall$HostCorrectedName)
+
+GMPDsmall$HostCorrectedName<-gsub("Equus asinus", "Equus hemionus", GMPDsmall$HostCorrectedName)
+
+GMPDsmall$HostCorrectedName<-gsub("Equus asinus", "Equus hemionus", GMPDsmall$HostCorrectedName)
+
+GMPDsmall$HostCorrectedName<-gsub("Monachus schauinslandi", "Neomonachus schauinslandi", GMPDsmall$HostCorrectedName)
+
+GMPDsmall$HostCorrectedName<-gsub("Neotragus moschatus", "Neotragus pygmaeus", GMPDsmall$HostCorrectedName)
+
+GMPDsmall$HostCorrectedName<-gsub("Ovis aries", "Ovis orientalis", GMPDsmall$HostCorrectedName)
+
 
 ##remove the ones without a name
 GMPDsmall <- GMPDsmall[GMPDsmall$HostCorrectedName!="no binomial name",]
