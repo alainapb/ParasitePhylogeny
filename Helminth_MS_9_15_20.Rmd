@@ -155,9 +155,9 @@ GMPDsmall <- GMPDsmall[GMPDsmall$HostCorrectedName!="no binomial name",]
 
 #### MAKE A MAMMAL TREE FOR HOSTS IN THE NEARCTIC DATASET ####
 
-##prune small tree to only include mammals from the Nearctic dataset
-setdiff(small_mam_tree$tip.label, nearctic_assoc_data$Host)->bye
-nearctic_mammal_tree<-drop.tip(small_mam_tree, small_mam_tree$tip.label[which(small_mam_tree$tip.label%in%bye)])
+##prune large tree to only include mammals from the Nearctic dataset
+setdiff(large_mam_tree$tip.label, nearctic_assoc_data$Host)->bye
+nearctic_mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%bye)])
 plot(nearctic_mammal_tree, cex=0.3)
 
 #check if any hosts are missing
@@ -168,8 +168,8 @@ missing # "Mustela vison", "Alces americanus", "Alopex lagopus", "Erethizon dors
 #### MAKE A MAMMAL TREE FOR HOSTS IN THE GMPD DATASET ####
 
 #prune small tree to only include mammals from the GMPD
-setdiff(small_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->bye2
-GMPD_mammal_tree<-drop.tip(small_mam_tree, small_mam_tree$tip.label[which(small_mam_tree$tip.label%in%bye2)])
+setdiff(large_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->bye2
+GMPD_mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%bye2)])
 plot(GMPD_mammal_tree, cex=0.3)
 
 
@@ -348,23 +348,23 @@ setdiff(global_tree$tip.label, names(global.para.mpd.remove))->bye5
 remove_global_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye5)])
 plot(remove_global_tree, cex=0.3)
 
-contMap(remove_global_tree, global.para.mpd.remove, fsize=.3, lwd=2, type="fan") #150 species
+contMap(remove_global_tree, global.para.mpd.remove, fsize=.3, lwd=2, type="fan") #159 species
 
 ##test phylogenetic signal of mpd with single host species = 0
 fitContinuous(global_tree, global.para.mpd, model="lambda") 
-#lambda = 0.611 ; aicc = 2464.11
+#lambda = 0.607 ; aicc = 2473.54
 fitContinuous(global_tree, global.para.mpd, model="white")  
-#                 aicc = 2505.42           
+#                 aicc = 2509.03           
 
 
 ##test phylogenetic signal of mpd with single host species removed
 fitContinuous(remove_global_tree, global.para.mpd.remove, model="lambda") 
-#lambda = 0.881; aicc = 1458.26
+#lambda = 0.895; aicc = 1547.52
 fitContinuous(remove_global_tree, global.para.mpd.remove, model="white")  
-#                aicc = 1511.61
+#                aicc = 1606.16
 
 
-global_mpd_evo<-c(2464.11,2505.42)
+global_mpd_evo<-c(2473.54,2509.03)
 names(global_mpd_evo)<-c("lambda","star")
 global_aic_mpd_signal <- tibble(aicc=global_mpd_evo, model=names(global_mpd_evo))
 global_aic_mpd<-global_aic_mpd_signal %>% 
@@ -378,7 +378,7 @@ global_aic_mpd<-global_aic_mpd_signal %>%
 global_aic_mpd
 
 
-remove_global_mpd_evo<-c(1458.26,1511.61)
+remove_global_mpd_evo<-c(1547.52,1606.16)
 names(remove_global_mpd_evo)<-c("lambda","star")
 
 remove_global_aic_mpd_signal <- tibble(aicc=remove_global_mpd_evo, model=names(remove_global_mpd_evo))
@@ -804,6 +804,7 @@ data.frame(logLik=lapply(fit_oum_model_to_bm_data_nearctic, function(fit) fit@lo
            Platys=lapply(fit_oum_model_to_bm_data_nearctic, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_bm_data_nearctic
 saveRDS(fit_oum_model_to_bm_data_nearctic, file="bootstrap_results/fit_oum_model_to_bm_data_nearctic.RDS")
+
 ## Fit the BM model to the BM data
 lapply(nearctic_bm_datasets, 
        function(data) brown(data=data, 
@@ -835,6 +836,7 @@ data.frame(logLik=lapply(fit_oum_model_to_oum_data_remove_nearctic, function(fit
            Platys=lapply(fit_oum_model_to_oum_data_remove_nearctic, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_oum_data_remove_nearctic
 saveRDS(fit_oum_model_to_oum_data_remove_nearctic, file="bootstrap_results/fit_oum_model_to_oum_data_remove_nearctic.RDS")
+
 ## Fit the OU1 model to the OUM data
 lapply(remove_nearctic_oum_datasets, 
        function(data) hansen(data=data, 
@@ -848,6 +850,7 @@ data.frame(logLik=lapply(fit_ou1_model_to_oum_data_remove_nearctic, function(fit
            global=lapply(fit_ou1_model_to_oum_data_remove_nearctic, function(fit) fit@theta %>% unlist) %>% unlist
            ) -> fit_ou1_model_to_oum_data_remove_nearctic
 saveRDS(fit_ou1_model_to_oum_data_remove_nearctic, file="bootstrap_results/fit_ou1_model_to_oum_data_remove_nearctic.RDS")
+
 ## Fit the BM model to the OUM data
 lapply(remove_nearctic_oum_datasets, 
        function(data) brown(data=data, 
@@ -872,6 +875,7 @@ data.frame(logLik=lapply(fit_oum_model_to_ou1_data_remove_nearctic, function(fit
            Platys=lapply(fit_oum_model_to_ou1_data_remove_nearctic, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_ou1_data_remove_nearctic
 saveRDS(fit_oum_model_to_ou1_data_remove_nearctic, file="bootstrap_results/fit_oum_model_to_ou1_data_remove_nearctic.RDS")
+
 ## Fit the OU1 model to the OU1 data
 lapply(remove_nearctic_ou1_datasets, 
        function(data) hansen(data=data, 
@@ -901,6 +905,7 @@ data.frame(logLik=lapply(fit_oum_model_to_bm_data_remove_nearctic, function(fit)
            Platys=lapply(fit_oum_model_to_bm_data_remove_nearctic, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_bm_data_remove_nearctic
 saveRDS(fit_oum_model_to_bm_data_remove_nearctic, file="bootstrap_results/fit_oum_model_to_bm_data_remove_nearctic.RDS")
+
 ## Fit the BM model to the BM data
 lapply(remove_nearctic_bm_datasets, 
        function(data) brown(data=data, 
@@ -931,6 +936,7 @@ data.frame(logLik=lapply(fit_oum_model_to_oum_data_global, function(fit) fit@log
            Platys=lapply(fit_oum_model_to_oum_data_global, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_oum_data_global
 saveRDS(fit_oum_model_to_oum_data_global, file="bootstrap_results/fit_oum_model_to_oum_data_global.RDS")
+
 ## Fit the OU1 model to the OUM data
 lapply(global_oum_datasets, 
        function(data) hansen(data=data, 
@@ -944,6 +950,7 @@ data.frame(logLik=lapply(fit_ou1_model_to_oum_data_global, function(fit) fit@log
            global=lapply(fit_ou1_model_to_oum_data_global, function(fit) fit@theta %>% unlist) %>% unlist
            ) -> fit_ou1_model_to_oum_data_global
 saveRDS(fit_ou1_model_to_oum_data_global, file="bootstrap_results/fit_ou1_model_to_oum_data_global.RDS")
+
 ## Fit the BM model to the OUM data
 lapply(global_oum_datasets, 
        function(data) brown(data=data, 
@@ -968,6 +975,7 @@ data.frame(logLik=lapply(fit_oum_model_to_ou1_data_global, function(fit) fit@log
            Platys=lapply(fit_oum_model_to_ou1_data_global, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_ou1_data_global
 saveRDS(fit_oum_model_to_ou1_data_global, file="bootstrap_results/fit_oum_model_to_ou1_data_global.RDS")
+
 ## Fit the OU1 model to the OU1 data
 lapply(global_ou1_datasets, 
        function(data) hansen(data=data, 
@@ -997,6 +1005,7 @@ data.frame(logLik=lapply(fit_oum_model_to_bm_data_global, function(fit) fit@logl
            Platys=lapply(fit_oum_model_to_bm_data_global, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_bm_data_global
 saveRDS(fit_oum_model_to_bm_data_global, file="bootstrap_results/fit_oum_model_to_bm_data_global.RDS")
+
 ## Fit the BM model to the BM data
 lapply(global_bm_datasets, 
        function(data) brown(data=data, 
@@ -1026,6 +1035,7 @@ data.frame(logLik=lapply(fit_oum_model_to_oum_data_remove_global, function(fit) 
            Platys=lapply(fit_oum_model_to_oum_data_remove_global, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_oum_data_remove_global
 saveRDS(fit_oum_model_to_oum_data_remove_global, file="bootstrap_results/fit_oum_model_to_oum_data_remove_global.RDS")
+
 ## Fit the OU1 model to the OUM data
 lapply(remove_global_oum_datasets, 
        function(data) hansen(data=data, 
@@ -1039,6 +1049,7 @@ data.frame(logLik=lapply(fit_ou1_model_to_oum_data_remove_global, function(fit) 
            global=lapply(fit_ou1_model_to_oum_data_remove_global, function(fit) fit@theta %>% unlist) %>% unlist
            ) -> fit_ou1_model_to_oum_data_remove_global
 saveRDS(fit_ou1_model_to_oum_data_remove_global, file="bootstrap_results/fit_ou1_model_to_oum_data_remove_global.RDS")
+
 ## Fit the BM model to the OUM data
 lapply(remove_global_oum_datasets, 
        function(data) brown(data=data, 
@@ -1063,6 +1074,7 @@ data.frame(logLik=lapply(fit_oum_model_to_ou1_data_remove_global, function(fit) 
            Platys=lapply(fit_oum_model_to_ou1_data_remove_global, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_ou1_data_remove_global
 saveRDS(fit_oum_model_to_ou1_data_remove_global, file="bootstrap_results/fit_oum_model_to_ou1_data_remove_global.RDS")
+
 ## Fit the OU1 model to the OU1 data
 lapply(remove_global_ou1_datasets, 
        function(data) hansen(data=data, 
@@ -1092,6 +1104,7 @@ data.frame(logLik=lapply(fit_oum_model_to_bm_data_remove_global, function(fit) f
            Platys=lapply(fit_oum_model_to_bm_data_remove_global, function(fit) fit@theta[[1]][3]) %>% unlist
            ) -> fit_oum_model_to_bm_data_remove_global
 saveRDS(fit_oum_model_to_bm_data_remove_global, file="bootstrap_results/fit_oum_model_to_bm_data_remove_global.RDS")
+
 ## Fit the BM model to the BM data
 lapply(remove_global_bm_datasets, 
        function(data) brown(data=data, 
@@ -1514,13 +1527,13 @@ contMap(GMPD_mammal_tree, global.mam.mpd, fsize=0.3, lwd =1, type ="fan")
 #### Calulate pairwise distance (PD) of each mammal to homo sapiens ####
 
 #subset PHYLACINE mammal tree to include GMPD mammals
-setdiff(small_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->group2
+setdiff(large_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->group2
 
 #add back the humans
 group3 <- group2[group2 != "Homo sapiens"]
 
 #subset the tree
-mammal_tree<-drop.tip(small_mam_tree, small_mam_tree$tip.label[which(small_mam_tree$tip.label%in%group3)])
+mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%group3)])
 
 #calculate the pairwise distances
 mam_dis<-cophenetic.phylo(mammal_tree)
@@ -1538,57 +1551,64 @@ distance2<-distances[names(distances) != "Homo sapiens"]
 figure_data<-data.frame("name"= names(global.mam.mpd), "global.mpd" = global.mam.mpd, "distance"= distance2)
 
 #species we want labeled in the figure
-important.names<-c("Macaca fuscata","Colobus angolensis","Ateles geoffroyi","Alouatta seniculus","Macaca cyclopis","Macaca fascicularis","Papio papio","Saguinus labiatus","Hylobates lar","Rhinopithecus bieti","Lemur catta","Prolemur simus","Mirounga angustirostris","Martes foina","Pan troglodytes","Gorilla beringei","Gorilla gorilla","Colobus angolensis","Pan paniscus","Pongo abelii", "Pongo pygmaeus","Saguinus mystax","Aotus nancymaae", "Cebus capucinus", "Saguinus midas", "Saimiri sciureus", "Saguinus fuscicollis", "Alouatta palliata")
+important.names<-c("Macaca fuscata","Colobus angolensis","Ateles geoffroyi","Alouatta seniculus","Macaca cyclopis","Macaca fascicularis","Papio papio","Saguinus labiatus","Hylobates lar","Rhinopithecus bieti","Lemur catta","Prolemur simus",
+                   #"Mirounga angustirostris",
+                   #"Martes foina",
+                   "Pan troglodytes","Gorilla beringei","Gorilla gorilla","Colobus angolensis","Pan paniscus","Pongo abelii", "Pongo pygmaeus","Saguinus mystax","Aotus nancymaae", "Cebus capucinus", "Saguinus midas", "Saimiri sciureus", "Saguinus fuscicollis", "Alouatta palliata")
 
 #make dataset for the to-be-labeled points
 smaller_data<- figure_data[figure_data$name %in% important.names,]
 
+#load package to label figure datapoints
+library(ggrepel)
+
+summary_data <- figure_data %>% 
+  mutate(xy = paste0(global.mpd, "_", distance)) %>% group_by(xy) %>% 
+  summarize(count = n()) %>%
+  separate(xy, into = c("global.mpd", "distance"), "_")
+
+summary_data$global.mpd <- as.numeric(summary_data$global.mpd)
+summary_data$distance <- as.numeric(summary_data$distance)
+
+new_fig_data <- merge(summary_data, figure_data, by = c("global.mpd", "distance"), all.y = TRUE)
+                                       
+                                       
 ggplot()+
-  geom_point(figure_data, mapping=aes(x=global.mpd, y= distance), 
-             alpha=0.5, 
-             size =3)+
+  geom_point(summary_data, mapping=aes(x=global.mpd, y= distance, size = count))+
   geom_text_repel(smaller_data, mapping=aes(x=global.mpd, y=distance, label = name),
                   size=2,
                   vjust = .4,
-                  point.padding = .1)+
+                  point.padding = .05)+
   labs(y= "PD to Humans", x = "MPD of a host's parasties")+
   theme_bw()
 
 
+```
 
+
+
+```{r specify_helminths_in_the_high_risk_mammals, echo=TRUE}
 ####What helminths infect the "high-risk" data point?####
 global_df %>%
   as.data.frame ->help
 
-#Cebus capucinus infected by two
-help$'Cebus capucinus' #210 and 249
-help[210,] #Hymenolepis diminuta
-help[249,] #Prosthenorchis elegans
 
-#Aotus nancymaae infected by two
-help$'Aotus nancymaae' == 1  #210 and 249 (Prosthenorchis elegans)
+#Saguinus mystax infected by two
+help$'Saguinus mystax' == 1 #27 and 210 
+help[27,]  #Dipetalonema graciliformis
 help[210,] #Hymenolepis diminuta
 
-
-#Saguinus midas infected by two
-help$'Saguinus midas' == 1 #27 and 249 (Prosthenorchis elegans)
-help[27,] #Dipetalonema graciliformis
-
-#Saimiri sciureus infected by two
-help$'Saimiri sciureus' == 1 #40 and 249 (Prosthenorchis elegans)
-help[40,] #Mansonella mariae
-
-#Saguinus fuscicollis infected by two
-help$'Saguinus fuscicollis' == 1 #164 and 249 (Prosthenorchis elegans)
+#Macaca fascicularis infected by four
+help$'Macaca fascicularis' == 1 #86, 136, 164, 200
+help[86,]  #Oesophagostomum aculeatum
+help[136,] #Strongyloides fuelleborni
 help[164,] #Trichuris trichiura
+help[200,] #Paragonimus westermani
 
 
-#Alouatta palliata infected by two
-help$'Alouatta palliata' == 1  #55 and 249 (Prosthenorchis elegans)
-help[55,] #Trypanoxyuris minutus
-
-
-
-
+#Alouatta seniculus infected by two
+help$'Alouatta seniculus' == 1  #55, 164
+help[55,]  #Trypanoxyuris minutus
+help[164,] #Trichuris trichiura
 ```
 
