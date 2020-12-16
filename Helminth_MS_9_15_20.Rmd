@@ -1577,10 +1577,11 @@ ggplot()+
   geom_point(summary_data, mapping=aes(x=global.mpd, y= distance, size = count))+
   geom_text_repel(smaller_data, mapping=aes(x=global.mpd, y=distance, label = name),
                   size=2,
-                  vjust = .4,
+                  vjust = .3,
                   point.padding = .05)+
   labs(y= "PD to Humans", x = "MPD of a host's parasties")+
-  theme_bw()
+  theme_bw()+
+  theme(legend.position = "none")
 
 
 ```
@@ -1605,6 +1606,10 @@ help[136,] #Strongyloides fuelleborni
 help[164,] #Trichuris trichiura
 help[200,] #Paragonimus westermani
 
+#Macaca cyclopis infected by two
+help$'Macaca cyclopis' == 1
+help[50,]  #Enterobius macaci
+help[200,] #Paragonimus westermani
 
 #Alouatta seniculus infected by two
 help$'Alouatta seniculus' == 1  #55, 164
