@@ -1498,6 +1498,7 @@ parameter_estimates
   
 
 
+###Table Order: Nearctic_0, Nearctic_Removed, Global_0, Global_Removed
 ```
 
 
