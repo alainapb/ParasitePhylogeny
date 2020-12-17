@@ -102,13 +102,8 @@ GMPDsmall<-GMPDmain[GMPDmain$ParasiteCorrectedName %in% global_tree$tip.label, ]
 
 
 ```{r mammal_data_from_PHYLACINE, include=FALSE}
-## load mammal tree from Phylacine data
-small_mam_tree<-read.nexus("Small_phylogeny_consensus.nex") #load in consensus small mammal tree
-#this tree is supposed to be more accurate, but may have less data (seems to have 2 less species of mammals)
-small_mam_tree$tip.label <-gsub("_", " ", small_mam_tree$tip.label)
 
-
-##load complete mammal tree from Faurby et al. 
+##load complete mammal tree from PHYLACINE
 large_mam_tree<-read.nexus("mammal_phylo_consensus.nex")
 
 
@@ -302,12 +297,6 @@ fitContinuous(nearctic_tree, nearctic.para.mpd, model="white")
 #                 aicc = 1023.17           
 
 
-##test phylogenetic signal of mpd with single host species removed
-fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="lambda") 
-#lambda = 0.926; aicc = 773.37
-fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="white")  
-#                aicc = 791.72
-
 
 nearctic_mpd_evo<-c(1017.13,1023.17)
 names(nearctic_mpd_evo)<-c("lambda","star")
@@ -321,6 +310,14 @@ nearctic_aic_mpd<-nearctic_aic_mpd_signal %>%
    arrange(desc(waicc))
 
 nearctic_aic_mpd
+
+
+##test phylogenetic signal of mpd with single host species removed
+fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="lambda") 
+#lambda = 0.926; aicc = 773.37
+fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="white")  
+#                aicc = 791.72
+
 
 remove_nearctic_mpd_evo<-c(773.37,791.72)
 names(remove_nearctic_mpd_evo)<-c("lambda","star")
@@ -357,13 +354,6 @@ fitContinuous(global_tree, global.para.mpd, model="white")
 #                 aicc = 2509.03           
 
 
-##test phylogenetic signal of mpd with single host species removed
-fitContinuous(remove_global_tree, global.para.mpd.remove, model="lambda") 
-#lambda = 0.895; aicc = 1547.52
-fitContinuous(remove_global_tree, global.para.mpd.remove, model="white")  
-#                aicc = 1606.16
-
-
 global_mpd_evo<-c(2473.54,2509.03)
 names(global_mpd_evo)<-c("lambda","star")
 global_aic_mpd_signal <- tibble(aicc=global_mpd_evo, model=names(global_mpd_evo))
@@ -376,6 +366,13 @@ global_aic_mpd<-global_aic_mpd_signal %>%
    arrange(desc(waicc))
 
 global_aic_mpd
+
+
+##test phylogenetic signal of mpd with single host species removed
+fitContinuous(remove_global_tree, global.para.mpd.remove, model="lambda") 
+#lambda = 0.895; aicc = 1547.52
+fitContinuous(remove_global_tree, global.para.mpd.remove, model="white")  
+#                aicc = 1606.16
 
 
 remove_global_mpd_evo<-c(1547.52,1606.16)
@@ -433,8 +430,10 @@ nearctic_aic_taxa<-nearctic_aic_taxa %>%
 nearctic_aic_taxa
 
 ##test phylogenetic signal for data without single host species
-fitContinuous(remove_nearctic_tree, remove.nearctic.no.taxa, model="lambda") #lambda=0.091,  aicc= 363.06
-fitContinuous(remove_nearctic_tree, remove.nearctic.no.taxa, model="white")               #               aicc= 361.07
+fitContinuous(remove_nearctic_tree, remove.nearctic.no.taxa, model="lambda") 
+#lambda=0.091,  aicc= 363.06
+fitContinuous(remove_nearctic_tree, remove.nearctic.no.taxa, model="white")              
+#               aicc= 361.07
 
 remove_nearctic_no_taxa_evo<-c(363.06, 361.07)
 names(remove_nearctic_no_taxa_evo)<-c("lambda", "star")
@@ -513,8 +512,10 @@ global_aic_taxa<-global_aic_taxa %>%
 global_aic_taxa
 
 ##test phylogenetic signal for data without single host species
-fitContinuous(remove_ntaxa_global_tree, remove.global.no.taxa, model="lambda") #lambda=0.000,  aicc = 802.86
-fitContinuous(remove_ntaxa_global_tree, remove.global.no.taxa, model="white")             #               aicc = 800.77
+fitContinuous(remove_ntaxa_global_tree, remove.global.no.taxa, model="lambda") 
+#lambda=0.000,  aicc = 802.86
+fitContinuous(remove_ntaxa_global_tree, remove.global.no.taxa, model="white")             
+#               aicc = 800.77
 
 remove_global_no_taxa_evo<-c(802.86, 800.77)
 names(remove_global_no_taxa_evo)<-c("lambda", "star")
@@ -589,10 +590,10 @@ plot(nearctic_ouchtree, regimes=nearctic_oum_regimes)
 ## OUM: AICc = 1008.5, alpha = 21.2, sigma.sq = 167044, Acanths = 134, Nematodes = 41.8, Platys = 95.2
 nearctic_oum_ouch <- hansen(data=nearctic_ouchdata, tree=nearctic_ouchtree, regimes=nearctic_oum_regimes, sqrt.alpha=100, sigma=100)
 
-## OU1: AICc = 1017.7, alpha = 6.43, sigma.sq = 64771, global = 71.8 
+## OU1: AICc = 1017.7, alpha = 6.35, sigma.sq = 63148, global = 71.7
 nearctic_ou1_ouch <- hansen(data=nearctic_ouchdata, tree=nearctic_ouchtree, regimes=nearctic_ou1_regimes, sqrt.alpha=100, sigma=100)
 
-## BM: AICc = 1039.0, sigma.sq = 25880
+## BM: AICc = 1039.0, sigma.sq = 25897
 nearctic_bm_ouch <- brown(data=nearctic_ouchdata, tree=nearctic_ouchtree)
 
 #######################################
@@ -628,10 +629,10 @@ plot(remove_nearctic_ouchtree, regimes=remove_nearctic_oum_regimes)
 ## OUM: AICc = 762.9, alpha = 458.6, sigma.sq = 2628906, Acanths = 201, Nematodes = 52.8, Platys = 119
 remove_nearctic_oum_ouch <- hansen(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree, regimes=remove_nearctic_oum_regimes, sqrt.alpha=100, sigma=100)
 
-## OU1: AICc = 778.5, alpha = 2.634, sigma.sq = 26815.8, global = 99.04
+## OU1: AICc = 778.5, alpha = 2.63, sigma.sq = 26815.8, global = 99.04
 remove_nearctic_ou1_ouch <- hansen(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree, regimes=remove_nearctic_ou1_regimes, sqrt.alpha=100, sigma=100)
 
-## BM: AICc = 782.6, sigma.sq = 15839
+## BM: AICc = 782.6, sigma.sq = 15840
 remove_nearctic_bm_ouch <- brown(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree)
 
 #######################################
@@ -655,6 +656,7 @@ for (i in 1:length(global_phyla_data$global_tree.tip.label))
 global_ouchdata <- as.data.frame(global_ouchdata)
 
 ## You can use the code above, replacing nearctic with global, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
+
 ## paint the regimes onto the tree
 paint(global_ouchtree, subtree=c("1"="Platys","227"="Nematodes","243"="Acanths"), branch=c("1"="Platys")) -> global_oum_regimes
 ## global regime
@@ -663,13 +665,13 @@ paint(global_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> globa
 plot(global_ouchtree, regimes=global_oum_regimes)
 
 ## Now do the fitting using ouch
-## OUM: AICc = 2473.9, alpha = 17.3, sigma.sq = 42483, Acanths = 24.8, Nematodes = 20.3, Platys = 47.5
+## OUM: AICc = 2480.3, alpha = 16.8, sigma.sq = 42480.8, Acanths = 24.8, Nematodes = 21.7, Platys = 47.6
 global_oum_ouch <- hansen(data=global_ouchdata, tree=global_ouchtree, regimes=global_oum_regimes, sqrt.alpha=100, sigma=100)
 
-## OU1: AICc = 2485.5, alpha = 9.2, sigma.sq = 26484, global = 32.7 
+## OU1: AICc = 2490.3, alpha = 9.14, sigma.sq = 26943.6, global = 33.3 
 global_ou1_ouch <- hansen(data=global_ouchdata, tree=global_ouchtree, regimes=global_ou1_regimes, sqrt.alpha=100, sigma=100)
 
-## BM: AICc = 2568.2, sigma.sq = 12177
+## BM: AICc = 2571.44, sigma.sq = 12334.6
 global_bm_ouch <- brown(data=global_ouchdata, tree=global_ouchtree)
 
 #######################################
@@ -693,8 +695,10 @@ for (i in 1:length(remove_global_phyla_data$remove_global_tree.tip.label))
 remove_global_ouchdata <- as.data.frame(remove_global_ouchdata)
 
 ## You can use the code above, replacing nearctic with remove_global, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
+
+
 ## paint the regimes onto the tree
-paint(remove_global_ouchtree, subtree=c("1"="Platys","122"="Nematodes","127"="Acanths"), branch=c("1"="Platys")) -> remove_global_oum_regimes
+paint(remove_global_ouchtree, subtree=c("1"="Platys","150"="Nematodes","155"="Acanths"), branch=c("1"="Platys")) -> remove_global_oum_regimes
 ## global regime
 paint(remove_global_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> remove_global_ou1_regimes
 
@@ -702,13 +706,13 @@ paint(remove_global_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -
 plot(remove_global_ouchtree, regimes=remove_global_oum_regimes)
 
 ## Now do the fitting using ouch
-## OUM: AICc = 1458.8, alpha = 4.45, sigma.sq = 10999, Acanths = 10.3, Nematodes = -17.36, Platys = 55
+## OUM: AICc = 1539.6, alpha = 6.49, sigma.sq = 13769.8, Acanths = 67.7, Nematodes = 37.5, Platys = 68.2
 remove_global_oum_ouch <- hansen(data=remove_global_ouchdata, tree=remove_global_ouchtree, regimes=remove_global_oum_regimes, sqrt.alpha=100, sigma=100)
 
-## OU1: AICc = 1455.7, alpha = 4.29, sigma.sq = 10767, global = 55 
+## OU1: AICc = 1543.6, alpha = 4.55, sigma.sq = 11222.8, global = 54.8 
 remove_global_ou1_ouch <- hansen(data=remove_global_ouchdata, tree=remove_global_ouchtree, regimes=remove_global_ou1_regimes, sqrt.alpha=100, sigma=100)
 
-## BM: AICc = 1475.6, sigma.sq = 6086
+## BM: AICc = 1563.4, sigma.sq = 6267.8
 remove_global_bm_ouch <- brown(data=remove_global_ouchdata, tree=remove_global_ouchtree)
 
 ```
