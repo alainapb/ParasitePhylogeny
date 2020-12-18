@@ -1556,7 +1556,7 @@ distance2<-distances[names(distances) != "Homo sapiens"]
 figure_data<-data.frame("name"= names(global.mam.mpd), "global.mpd" = global.mam.mpd, "distance"= distance2)
 
 #species we want labeled in the figure
-important.names<-c("Macaca fuscata","Colobus angolensis","Ateles geoffroyi","Alouatta seniculus","Macaca cyclopis","Macaca fascicularis","Papio papio","Saguinus labiatus","Hylobates lar","Rhinopithecus bieti","Lemur catta","Prolemur simus",
+important.names<-c("Macaca fuscata","Colobus angolensis","Ateles geoffroyi","Alouatta seniculus","Macaca cyclopis","Macaca fascicularis","Papio papio","Saguinus labiatus","Hylobates lar","Rhinopithecus bieti","Lemur catta","Prolemur simus","Piliocolobus tephrosceles","Chlorocebus aethiops","Piliocolobus rufomitratus",
                    #"Mirounga angustirostris",
                    #"Martes foina",
                    "Pan troglodytes","Gorilla beringei","Gorilla gorilla","Colobus angolensis","Pan paniscus","Pongo abelii", "Pongo pygmaeus","Saguinus mystax","Aotus nancymaae", "Cebus capucinus", "Saguinus midas", "Saimiri sciureus", "Saguinus fuscicollis", "Alouatta palliata")
@@ -1565,7 +1565,7 @@ important.names<-c("Macaca fuscata","Colobus angolensis","Ateles geoffroyi","Alo
 smaller_data<- figure_data[figure_data$name %in% important.names,]
 
 #load package to label figure datapoints
-library(ggrepel)
+#library(ggrepel)
 
 summary_data <- figure_data %>% 
   mutate(xy = paste0(global.mpd, "_", distance)) %>% group_by(xy) %>% 
@@ -1578,7 +1578,7 @@ summary_data$distance <- as.numeric(summary_data$distance)
 new_fig_data <- merge(summary_data, figure_data, by = c("global.mpd", "distance"), all.y = TRUE)
                                        
                                        
-ggplot()+
+MAM_FIG<-ggplot()+
   geom_point(summary_data, mapping=aes(x=global.mpd, y= distance, size = count))+
   geom_text_repel(smaller_data, mapping=aes(x=global.mpd, y=distance, label = name),
                   size=2,
