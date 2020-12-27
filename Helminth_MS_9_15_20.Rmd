@@ -1529,6 +1529,10 @@ contMap(GMPD_mammal_tree, global.mam.mpd, fsize=0.3, lwd =1, type ="fan")
 
 ```{r zoonoses_figure, echo=FALSE}
 
+######################
+#### GMPD DATASET ####
+######################
+
 #### Calulate pairwise distance (PD) of each mammal to homo sapiens ####
 
 #subset PHYLACINE mammal tree to include GMPD mammals
@@ -1575,6 +1579,7 @@ summary_data <- figure_data %>%
 summary_data$global.mpd <- as.numeric(summary_data$global.mpd)
 summary_data$distance <- as.numeric(summary_data$distance)
 
+
 new_fig_data <- merge(summary_data, figure_data, by = c("global.mpd", "distance"), all.y = TRUE)
                                        
                                        
@@ -1585,10 +1590,86 @@ MAM_FIG<-ggplot()+
                   vjust = .3,
                   point.padding = .05)+
   labs(y= "PD to Humans", x = "MPD of a host's parasties")+
+  scale_y_continuous(limits = c(0,400))+
   theme_bw()+
   theme(legend.position = "none")
 
 
+
+##########################
+#### NEARCTIC DATASET ####
+##########################
+
+#### Calulate pairwise distance (PD) of each mammal to homo sapiens ####
+
+#subset PHYLACINE mammal tree to include GMPD mammals
+setdiff(large_mam_tree$tip.label, colnames(nearctic_df))->group4
+
+#add back the the humans
+group5 <- group4[group4 != "Homo sapiens"]
+
+#subset the tree
+nearctic_mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%group5)])
+
+#calculate the pairwise distances
+nearctic_mam_dis<-cophenetic.phylo(nearctic_mammal_tree)
+
+#pull out the PD for each mammal to humans
+nearctic_mam_dis2 = as.data.frame(nearctic_mam_dis)
+nearctic_distances<-nearctic_mam_dis2[,"Homo sapiens"]
+names(nearctic_distances)<-rownames(nearctic_mam_dis2)
+view(nearctic_distances)
+
+#remove humans from distances
+distance3<-nearctic_distances[names(nearctic_distances) != "Homo sapiens"]
+
+#make a dataframe for the figure 
+figure_data_2<-data.frame("name"= names(nearctic.mam.mpd), "nearctic.mpd" = nearctic.mam.mpd, "distance"= distance3)
+
+#species we want labeled in the figure
+nearctic.important.names<-c("Didelphis virginiana", "Procyon lotor", "Ovibos moschatus", "Vulpes velox",
+                            "Peromyscus gossypinus","Marmota monax", "Sciurus niger", 
+                            "Didelphis marsupialis", "Urocyon cinereoargenteus", "Lontra canadensis",
+                            "Peromyscus leucopus", "Blarina brevicauda", "Ursus americanus", 
+                            "Oreamnos americanus", "Lynx rufus", "Peromyscus maniculatus", 
+                            "Castor canadensis")
+
+#make dataset for the to-be-labeled points
+nearctic_smaller_data<- figure_data_2[figure_data_2$name %in% nearctic.important.names,]
+
+#load package to label figure datapoints
+library(ggrepel)
+
+nearctic_summary_data <- figure_data_2 %>% 
+  mutate(xy = paste0(nearctic.mpd, "_", distance)) %>% group_by(xy) %>% 
+  summarize(count = n()) %>%
+  separate(xy, into = c("nearctic.mpd", "distance"), "_")
+
+nearctic_summary_data$nearctic.mpd <- as.numeric(nearctic_summary_data$nearctic.mpd)
+nearctic_summary_data$distance <- as.numeric(nearctic_summary_data$distance)
+
+
+nearctic_fig_data <- merge(nearctic_summary_data, figure_data_2, by = c("nearctic.mpd", "distance"), all.y = TRUE)
+                                       
+                                       
+NEARCTIC_MAM<-ggplot()+
+  geom_point(nearctic_summary_data, mapping=aes(x=nearctic.mpd, y= distance, size = count))+
+  geom_text_repel(nearctic_smaller_data, mapping=aes(x=nearctic.mpd, y=distance, label = name),
+                  size=2,
+                  vjust = .6,
+                  point.padding = .2)+
+  labs(y= " ", x = "Average MPD of a host's parasties")+
+  scale_y_continuous(limits = c(0,400))+
+  theme_bw()+
+  theme(legend.position = "none")
+
+
+
+################################
+#### ADD THE PLOTS TOGETHER ####
+################################
+
+MAM_FIG + NEARCTIC_MAM
 ```
 
 
