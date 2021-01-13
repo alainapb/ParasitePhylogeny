@@ -64,7 +64,7 @@ global_tree<-tree
 #check
 plot(global_tree)
 
-global_tree<-drop.tip(global_tree, c("Filaria martis","Prosthenorchis elegans"))
+global_tree<-drop.tip(global_tree, c("Filaria martis","Prosthenorchis elegans")) #249 species
 
 ```
 
@@ -175,7 +175,7 @@ plot(GMPD_mammal_tree, cex=0.3)
 
 ```{r calculate_mpd_for_nearctic_data, include= TRUE}
 
-##parasite: subset global tree to neartic data
+##subset global tree to nearctic data
 setdiff(global_tree$tip.label, nearctic_assoc_data$Parasite)->bye3
 nearctic_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye3)])
 plot(nearctic_tree, cex=0.3)
@@ -280,14 +280,14 @@ global.mam.mpd.remove<-global.mam.mpd.remove[!is.na(global.mam.mpd.remove)] ## h
 #### NEARCTIC DATASET ####
 
 #view mpd with single host species = 0 on the tree
-contMap(nearctic_tree, nearctic.para.mpd, fsize= .3, lwd=.9, leg.text="x", type="fan") #90 species
+contMap(nearctic_tree, nearctic.para.mpd, fsize= .3, lwd=1, leg.text="x", type="fan") #90 species
 
 #view mpd with single host species removed on the tree
 setdiff(nearctic_tree$tip.label, names(nearctic.para.mpd.remove))->bye4
 remove_nearctic_tree<-drop.tip(nearctic_tree, nearctic_tree$tip.label[which(nearctic_tree$tip.label%in%bye4)])
-plot(remove_nearctic_tree, cex=0.3)
+#plot(remove_nearctic_tree, cex=0.3)
 
-contMap(remove_nearctic_tree, nearctic.para.mpd.remove, fsize=.3, lwd=.9) #70 species
+contMap(remove_nearctic_tree, nearctic.para.mpd.remove, fsize=.3, lwd=1) #70 species
 
 
 ##test phylogenetic signal of mpd with single host species = 0
@@ -343,7 +343,7 @@ contMap(global_tree, global.para.mpd, fsize= .3,lwd=2, type="fan") #249 species
 #view mpd with single host species removed on the tree
 setdiff(global_tree$tip.label, names(global.para.mpd.remove))->bye5
 remove_global_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye5)])
-plot(remove_global_tree, cex=0.3)
+#plot(remove_global_tree, cex=0.3)
 
 contMap(remove_global_tree, global.para.mpd.remove, fsize=.3, lwd=2, type="fan") #159 species
 
@@ -1244,7 +1244,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "GMPD (no spec)")
+mtext(side=3, line=0.25, "GMPD (no single host)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1278,7 +1278,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "Nearctic (no spec)")
+mtext(side=3, line=0.25, "Nearctic (no single host)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1323,7 +1323,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "GMPD (no spec)")
+mtext(side=3, line=0.25, "GMPD (no single host)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1357,7 +1357,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "Nearctic (no spec)")
+mtext(side=3, line=0.25, "Nearctic (no single host)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1507,6 +1507,367 @@ parameter_estimates
 
 
 
+```{r adding_and_cleaning_host_and_parasite_trait_data, echo = TRUE}
+
+
+#### Load parasite body size data from Benesh, Lafferty, and Kuris 2017 ####
+## Length and width measurments are in mm 
+benesh_data_para<- read_csv("Benesh_et_al_2017/ecy1680-sup-0001-datas1/CLC_database_lifehistory.csv")
+benesh_data_para$Host.species <-gsub(" ", "_", benesh_data_para$Host.species)
+
+## remove parasites from Benesh et al. dataset that don't exist in the phylogeny
+setdiff(benesh_data_para$Parasite.species, GMPDsmall$ParasiteCorrectedName)->nothanks
+benesh_data_para[-which(benesh_data_para$Parasite.species %in% nothanks) ,] -> b_para_subset
+
+## average the body size for rows that are the same species
+subset(b_para_subset, Sex=="f") %>%
+  group_by(Parasite.species) %>%
+  summarise(mean_l=mean(Length, na.rm = TRUE)) ->data_fem_len
+
+subset(b_para_subset, Sex=="f") %>%
+  group_by(Parasite.species) %>%
+  summarise(mean_w=mean(Width, na.rm = TRUE)) ->data_fem_wid
+
+## combine length and width in a meaningful way to calculate 'body size' (L*W)?
+b.size<-left_join(data_fem_len, data_fem_wid, by="Parasite.species")
+b.size$ratio<-(b.size$mean_l*b.size$mean_w)
+
+write.csv(b.size, "bodysizepara.csv")
+
+
+#### Trim the tree to include only those parasite species for which there is body size data ####
+
+##nearctic mpd, single host = 0 
+setdiff(nearctic_tree$tip.label, b.size$Parasite.species)->no_body_size 
+nearctic_pgls <- drop.tip(nearctic_tree, nearctic_tree$tip.label[which(nearctic_tree$tip.label%in%no_body_size)])
+
+# make sure body size is in the same order as the parasite phylogeny
+nearctic.b.size <- b.size[match(nearctic_pgls$tip.label, b.size$Parasite.species),]
+
+
+##nearctic mpd, single host removed 
+setdiff(remove_nearctic_tree$tip.label, b.size$Parasite.species)->no_body_size1 
+remove_nearctic_pgls <- drop.tip(remove_nearctic_tree, remove_nearctic_tree$tip.label[which(remove_nearctic_tree$tip.label%in%no_body_size1)])
+
+# make sure body size is in the same order as the parasite phylogeny
+remove.nearctic.b.size <- b.size[match(remove_nearctic_pgls$tip.label, b.size$Parasite.species),]
+
+
+##global mpd, single host = 0 
+setdiff(global_tree$tip.label, b.size$Parasite.species)->no_body_size2 
+global_pgls <- drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%no_body_size2)])
+
+# make sure body size is in the same order as the parasite phylogeny
+global.b.size <- b.size[match(global_pgls$tip.label, b.size$Parasite.species),]
+
+##global mpd, single host removed
+setdiff(remove_global_tree$tip.label, b.size$Parasite.species)->no_body_size3 
+remove_global_pgls <- drop.tip(remove_global_tree, remove_global_tree$tip.label[which(remove_global_tree$tip.label%in%no_body_size3)])
+
+# make sure body size is in the same order as the parasite phylogeny
+remove.global.b.size <- b.size[match(remove_global_pgls$tip.label, b.size$Parasite.species),]
+
+
+
+#### adding in host trait data (mass.g) from PHYLACINE ####
+#Faurby, S., Davis, M., Pedersen, R. Ø., Schowanek, S. D., Antonelli, A., & Svenning, J.C. (In Press). PHYLACINE 1.2: The Phylogenetic Atlas of Mammal Macroecology. Ecology
+#load mammal data
+Trait_data <- read_csv("Trait_data.csv")
+
+#correct for spaces in the binomial names
+Trait_data$Binomial.1.2<-gsub("_", " ", Trait_data$Binomial.1.2)
+
+#make column called "Host" in Trait_data
+Trait_data$HostCorrectedName<-Trait_data$Binomial.1.2
+
+#merge 
+left_join(GMPDsmall, Trait_data, by = "HostCorrectedName")->ss
+host_trait_data<-data.frame("Parasite" = ss$ParasiteCorrectedName,
+                            "Host" = ss$HostCorrectedName, 
+                            "Mass.g" = ss$Mass.g)
+
+
+host_trait_data %>% 
+  group_by(Parasite) %>% 
+  summarise(avgMass=mean(Mass.g,na.rm=T)) -> Host_mass
+
+
+##subset host data for each group
+
+#nearctic with single hosts = 0
+setdiff(Host_mass$Parasite, nearctic_pgls$tip.label)-> getout
+nearctic_traits<-Host_mass[-which(Host_mass$Parasite %in% getout),]
+#put in tree tip label order
+nearctic_traits <- nearctic_traits[match(nearctic_pgls$tip.label, nearctic_traits$Parasite),]
+
+
+#nearctic with single hosts removed
+setdiff(Host_mass$Parasite, remove_nearctic_pgls$tip.label)-> getout1
+remove_nearctic_traits<-Host_mass[-which(Host_mass$Parasite %in% getout1),]
+#put in tree tip label order
+remove_nearctic_traits <- remove_nearctic_traits[match(remove_nearctic_pgls$tip.label, remove_nearctic_traits$Parasite),]
+
+
+#global with single hosts = 0
+global_traits<-Host_mass
+#put in tree tip label order
+global_traits <- global_traits[match(global_pgls$tip.label, global_traits$Parasite),]
+
+
+#global with single hosts removed
+setdiff(Host_mass$Parasite, remove_global_pgls$tip.label)-> getout2
+remove_global_traits<-Host_mass[-which(Host_mass$Parasite %in% getout2),]
+#put in tree tip label order
+remove_global_traits <- remove_global_traits[match(remove_global_pgls$tip.label, remove_global_traits$Parasite),]
+
+
+#### clean parasite transmission data ####
+
+#nearctic with single hosts = 0
+nearctic_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% nearctic_pgls$tip.label),]
+nearctic_trans<-nearctic_trans[match(nearctic_pgls$tip.label, nearctic_trans$CorrectName),]
+
+#neartic with single species removed
+remove_nearctic_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% remove_nearctic_pgls$tip.label),]
+remove_nearctic_trans<-remove_nearctic_trans[match(remove_nearctic_pgls$tip.label, remove_nearctic_trans$CorrectName),]
+
+
+#global with single hosts = 0
+global_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% global_pgls$tip.label),]
+global_trans<-global_trans[match(global_pgls$tip.label, global_trans$CorrectName),]
+
+#global with single species removed
+remove_global_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% remove_global_pgls$tip.label),]
+remove_global_trans<-remove_global_trans[match(remove_global_pgls$tip.label, remove_global_trans$CorrectName),]
+
+```
+
+
+
+
+```{r pgls_nearctic_sh0, include = FALSE}
+
+###NEARCTIC DATASET####
+
+##with single host species MPD = 0
+
+#clean nearctic.mam.mpd
+pgls.nearctic.para.mpd<-nearctic.para.mpd[match(nearctic_pgls$tip.label, names(nearctic.para.mpd))]
+
+nearctic_dat<-data.frame(taxa=nearctic_pgls$tip.label,
+                para.mpd=pgls.nearctic.para.mpd,
+                para.l=nearctic.b.size$mean_l,
+                para.w=nearctic.b.size$mean_w,
+                para.b=nearctic.b.size$ratio,
+                close=as.factor(nearctic_trans$close),
+                nonclose=as.factor(nearctic_trans$nonclose),
+                intermediate=as.factor(nearctic_trans$intermediate),
+                host_mass=nearctic_traits$avgMass)
+
+## constructs the data.frame of the taxa names and data in the order of the tree tips
+nearctic_cdat<-comparative.data(data=nearctic_dat, phy=nearctic_pgls, names.col = "taxa")
+print(nearctic_cdat)
+
+## model testing ##
+
+#all predictors
+nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, nearctic_cdat, lambda = .384)
+summary(nearctic_mod)
+anova(nearctic_mod)
+
+#removed parasite length 
+nearctic_mod2<-pgls(para.mpd ~ close + nonclose + intermediate + host_mass, nearctic_cdat, lambda=.384) #host mass is significant
+summary(nearctic_mod2)
+anova(nearctic_mod2)
+
+#removed parasite length and close transmission
+nearctic_mod3<-pgls(para.mpd ~ nonclose + intermediate + host_mass, nearctic_cdat, lambda=.384) 
+summary(nearctic_mod3)
+anova(nearctic_mod3)
+
+anova(nearctic_mod2, nearctic_mod3)
+
+#removed parasite length and close transmission + intermediate ##### BEST MODEL #####
+nearctic_mod4<-pgls(para.mpd ~ nonclose + host_mass, nearctic_cdat, lambda=.384) 
+summary(nearctic_mod4)
+anova(nearctic_mod4)
+
+anova(nearctic_mod3, nearctic_mod4)
+
+
+#only host mass ##### BEST MODEL #####
+nearctic_mod5<-pgls(para.mpd ~  host_mass, nearctic_cdat, lambda=.384) 
+summary(nearctic_mod5)
+anova(nearctic_mod5)
+
+anova(nearctic_mod4, nearctic_mod5)
+
+```
+
+
+
+
+```{r pgls_nearctic_shR, include=FALSE}
+###NEARCTIC DATASET####
+
+##with single host species removed
+
+#clean nearctic.mam.mpd
+pgls.remove.n.para.mpd<-nearctic.para.mpd[match(remove_nearctic_pgls$tip.label, names(nearctic.para.mpd.remove))]
+
+remove_nearctic_dat<-data.frame(taxa=remove_nearctic_pgls$tip.label,
+                para.mpd=pgls.remove.n.para.mpd,
+                para.l=remove.nearctic.b.size$mean_l,
+                para.w=remove.nearctic.b.size$mean_w,
+                para.b=remove.nearctic.b.size$ratio,
+                close=as.factor(remove_nearctic_trans$close),
+                nonclose=as.factor(remove_nearctic_trans$nonclose),
+                intermediate=as.factor(remove_nearctic_trans$intermediate),
+                host_mass=remove_nearctic_traits$avgMass)
+
+## constructs the data.frame of the taxa names and data in the order of the tree tips
+remove_nearctic_cdat<-comparative.data(data=remove_nearctic_dat, phy=remove_nearctic_pgls, names.col = "taxa")
+print(remove_nearctic_cdat)
+
+## model testing ##
+
+#all predictors 
+remove_nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_nearctic_cdat, lambda = .926)
+summary(remove_nearctic_mod)
+anova(remove_nearctic_mod)
+
+#removed host mass  ####### BEST MODEL #######
+remove_nearctic_mod2<-pgls(para.mpd~ para.l + close + nonclose + intermediate, remove_nearctic_cdat, lambda = .926)
+summary(remove_nearctic_mod2) 
+anova(remove_nearctic_mod2)
+
+anova(remove_nearctic_mod, remove_nearctic_mod2)
+
+
+#removed host mass and close transmission
+remove_nearctic_mod3<-pgls(para.mpd~ para.l + nonclose + intermediate , remove_nearctic_cdat, lambda = .926)
+summary(remove_nearctic_mod3) #worse model than ^^^
+anova(remove_nearctic_mod3)
+
+```
+
+
+
+
+```{r pgls_global_sh0, include=FALSE}
+
+###GLOBAL DATASET####
+
+##with single host species MPD = 0
+
+#clean global.mam.mpd
+pgls.global.para.mpd<-global.para.mpd[match(global_pgls$tip.label, names(global.para.mpd))]
+
+global_dat<-data.frame(taxa=global_pgls$tip.label,
+                para.mpd=pgls.global.para.mpd,
+                para.l=global.b.size$mean_l,
+                para.w=global.b.size$mean_w,
+                para.b=global.b.size$ratio,
+                close=as.factor(global_trans$close),
+                nonclose=as.factor(global_trans$nonclose),
+                intermediate=as.factor(global_trans$intermediate),
+                host_mass=global_traits$avgMass)
+
+## constructs the data.frame of the taxa names and data in the order of the tree tips
+global_cdat<-comparative.data(data=global_dat, phy=global_pgls, names.col = "taxa")
+print(global_cdat)
+
+## model testing ##
+
+#all predictors
+global_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, global_cdat, lambda = .607)
+summary(global_mod)
+anova(global_mod)
+
+#removed host mass
+global_mod2 <- pgls(para.mpd~ para.l + close + nonclose + intermediate, global_cdat, lambda = .607)
+summary(global_mod2)
+anova(global_mod2)
+
+
+#removed nonclose and host mass
+global_mod3 <- pgls(para.mpd~ para.l + close + intermediate, global_cdat, lambda = .607)
+summary(global_mod3) 
+anova(global_mod3)
+
+#only parasite length and close transmission
+global_mod4<-pgls(para.mpd ~ para.l + close, global_cdat, lambda = .607)
+summary(global_mod4) 
+anova(global_mod4)
+
+#only close transmission  #### BEST MODEL ####
+global_mod5<-pgls(para.mpd ~ close, global_cdat, lambda = .607)
+summary(global_mod5) 
+anova(global_mod5)
+
+anova(global_mod4, global_mod5)
+
+
+```
+
+
+
+
+```{r pgls_global_shR, include = FALSE}
+###GLOBAL DATASET####
+
+##with single host species removed
+
+#clean nearctic.mam.mpd
+pgls.remove.g.para.mpd<-global.para.mpd[match(remove_global_pgls$tip.label, names(global.para.mpd.remove))]
+
+remove_global_dat<-data.frame(taxa=remove_global_pgls$tip.label,
+                para.mpd=pgls.remove.g.para.mpd,
+                para.l=remove.global.b.size$mean_l,
+                para.w=remove.global.b.size$mean_w,
+                para.b=remove.global.b.size$ratio,
+                close=as.factor(remove_global_trans$close),
+                nonclose=as.factor(remove_global_trans$nonclose),
+                intermediate=as.factor(remove_global_trans$intermediate),
+                host_mass=remove_global_traits$avgMass)
+
+## constructs the data.frame of the taxa names and data in the order of the tree tips
+remove_global_cdat<-comparative.data(data=remove_global_dat, phy=remove_global_pgls, names.col = "taxa")
+print(remove_global_cdat)
+
+## model testing ##
+
+#all predictors
+remove_global_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_global_cdat, lambda = .895)
+summary(remove_global_mod)
+anova(remove_global_mod)
+
+#removed host mass
+remove_global_mod2 <- pgls(para.mpd~ para.l + close + nonclose + intermediate, remove_global_cdat, lambda = .895)
+summary(remove_global_mod2) 
+anova(remove_global_mod2)
+
+
+#removed nonclose and host mass
+remove_global_mod3 <- pgls(para.mpd~ para.l + close + intermediate, remove_global_cdat, lambda = .895)
+summary(remove_global_mod3) 
+anova(remove_global_mod3)
+
+
+#just parasite length + close
+remove_global_mod4 <- pgls(para.mpd~ para.l  + close, remove_global_cdat, lambda = .895)
+summary(remove_global_mod4) 
+anova(remove_global_mod4)
+
+#just close transmission  #### BEST MODEL ####
+remove_global_mod5 <- pgls(para.mpd~ close, remove_global_cdat, lambda = .895)
+summary(remove_global_mod5) 
+anova(remove_global_mod5)
+
+
+```
+
+
 
 ```{r mammal_tree_with_host_mpd, echo = TRUE}
 
@@ -1551,7 +1912,7 @@ mam_dis<-cophenetic.phylo(mammal_tree)
 mam_dis2 = as.data.frame(mam_dis)
 distances<-mam_dis2[,"Homo sapiens"]
 names(distances)<-rownames(mam_dis2)
-view(distances)
+#view(distances)
 
 #remove humans from distances
 distance2<-distances[names(distances) != "Homo sapiens"]
@@ -1559,11 +1920,12 @@ distance2<-distances[names(distances) != "Homo sapiens"]
 #make a dataframe for the figure 
 figure_data<-data.frame("name"= names(global.mam.mpd), "global.mpd" = global.mam.mpd, "distance"= distance2)
 
+##label for 
+#figure_data$color<-c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+
 #species we want labeled in the figure
-important.names<-c("Macaca fuscata","Colobus angolensis","Ateles geoffroyi","Alouatta seniculus","Macaca cyclopis","Macaca fascicularis","Papio papio","Saguinus labiatus","Hylobates lar","Rhinopithecus bieti","Lemur catta","Prolemur simus","Piliocolobus tephrosceles","Chlorocebus aethiops","Piliocolobus rufomitratus",
-                   #"Mirounga angustirostris",
-                   #"Martes foina",
-                   "Pan troglodytes","Gorilla beringei","Gorilla gorilla","Colobus angolensis","Pan paniscus","Pongo abelii", "Pongo pygmaeus","Saguinus mystax","Aotus nancymaae", "Cebus capucinus", "Saguinus midas", "Saimiri sciureus", "Saguinus fuscicollis", "Alouatta palliata")
+important.names<-c("Procyon lotor",
+                   "Urocyon cinereoargenteus")
 
 #make dataset for the to-be-labeled points
 smaller_data<- figure_data[figure_data$name %in% important.names,]
@@ -1582,17 +1944,18 @@ summary_data$distance <- as.numeric(summary_data$distance)
 
 new_fig_data <- merge(summary_data, figure_data, by = c("global.mpd", "distance"), all.y = TRUE)
                                        
-                                       
+
 MAM_FIG<-ggplot()+
-  geom_point(summary_data, mapping=aes(x=global.mpd, y= distance, size = count))+
+  geom_point(new_fig_data, mapping=aes(x=global.mpd, y= distance, size = count))+
   geom_text_repel(smaller_data, mapping=aes(x=global.mpd, y=distance, label = name),
                   size=2,
-                  vjust = .3,
+                  vjust = .4,
                   point.padding = .05)+
-  labs(y= "PD to Humans", x = "MPD of a host's parasties")+
-  scale_y_continuous(limits = c(0,400))+
+  labs(y= "PD to Humans", x = " ")+
+  scale_y_continuous(limits = c(0,210))+
   theme_bw()+
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        panel.grid = element_blank())
 
 
 
@@ -1618,7 +1981,7 @@ nearctic_mam_dis<-cophenetic.phylo(nearctic_mammal_tree)
 nearctic_mam_dis2 = as.data.frame(nearctic_mam_dis)
 nearctic_distances<-nearctic_mam_dis2[,"Homo sapiens"]
 names(nearctic_distances)<-rownames(nearctic_mam_dis2)
-view(nearctic_distances)
+#view(nearctic_distances)
 
 #remove humans from distances
 distance3<-nearctic_distances[names(nearctic_distances) != "Homo sapiens"]
@@ -1627,12 +1990,11 @@ distance3<-nearctic_distances[names(nearctic_distances) != "Homo sapiens"]
 figure_data_2<-data.frame("name"= names(nearctic.mam.mpd), "nearctic.mpd" = nearctic.mam.mpd, "distance"= distance3)
 
 #species we want labeled in the figure
-nearctic.important.names<-c("Didelphis virginiana", "Procyon lotor", "Ovibos moschatus", "Vulpes velox",
-                            "Peromyscus gossypinus","Marmota monax", "Sciurus niger", 
-                            "Didelphis marsupialis", "Urocyon cinereoargenteus", "Lontra canadensis",
-                            "Peromyscus leucopus", "Blarina brevicauda", "Ursus americanus", 
-                            "Oreamnos americanus", "Lynx rufus", "Peromyscus maniculatus", 
-                            "Castor canadensis")
+nearctic.important.names<-c(#"Didelphis virginiana", 
+                            "Procyon lotor",
+                            #"Didelphis marsupialis", 
+                            #"Ursus americanus",
+                            "Urocyon cinereoargenteus")
 
 #make dataset for the to-be-labeled points
 nearctic_smaller_data<- figure_data_2[figure_data_2$name %in% nearctic.important.names,]
@@ -1656,12 +2018,13 @@ NEARCTIC_MAM<-ggplot()+
   geom_point(nearctic_summary_data, mapping=aes(x=nearctic.mpd, y= distance, size = count))+
   geom_text_repel(nearctic_smaller_data, mapping=aes(x=nearctic.mpd, y=distance, label = name),
                   size=2,
-                  vjust = .6,
-                  point.padding = .2)+
-  labs(y= " ", x = "Average MPD of a host's parasties")+
-  scale_y_continuous(limits = c(0,400))+
+                  vjust = .4,
+                  point.padding = .05)+
+  labs(y= " ", x = " ")+
+  scale_y_continuous(limits = c(0,210))+
   theme_bw()+
-  theme(legend.position = "none")
+  theme(legend.position = "none", 
+        panel.grid = element_blank())
 
 
 
@@ -1669,8 +2032,108 @@ NEARCTIC_MAM<-ggplot()+
 #### ADD THE PLOTS TOGETHER ####
 ################################
 
-MAM_FIG + NEARCTIC_MAM
+Fig3<-MAM_FIG + NEARCTIC_MAM
+
+ggsave("~/Desktop/figure_three.pdf", Fig3, width = 5, height = 5)
 ```
+
+
+```{r descriptive_mammal_results, echo=FALSE}
+
+##############
+#####GMPD#####
+##############
+
+#How many host are only infected by one helminth?
+figure_data #197 species
+single<-subset(figure_data, figure_data$global.mpd == 0)
+single #75 species
+
+75/197
+
+##############
+## Nearctic ##
+##############
+
+#How many host are only infected by one helminth?
+figure_data_2 #67 species
+single_2<-subset(figure_data_2, figure_data_2$nearctic.mpd == 0)
+single_2 #75 species
+
+19/67
+
+```
+
+
+
+
+```{r check_for_smapling_bias, echo=TRUE}
+#####################
+##### GMPD ##########
+#####################
+
+##test data bias, correlation between para.mpd and no. of citations
+a<-as.data.frame(table(GMPDsmall$ParasiteCorrectedName))
+setdiff(a$Var1, names(global.para.mpd))->kickout
+a[-which(a$Var1 %in% kickout),]->a
+
+freq<-a[match(global_tree$tip.label, a$Var1),]
+
+cor(a$Freq, global.para.mpd) #r=-0.031
+ggplot(a, mapping = aes(a$Freq,global.para.mpd)) + geom_point() 
+##Echinococcus multilocularis has 429 observations in the dataset
+
+##without E. multilocularis --no obvious bias
+ggplot(a, mapping = aes(a$Freq, global.para.mpd)) + 
+  geom_point() +
+  xlim(0,150)+
+  geom_smooth(method='lm', col='grey38')+
+  labs(x='No. of Parasite Observations', y='Parasite MPD')+
+  theme_classic()
+
+
+##test mammal bias
+b<-as.data.frame(table(GMPDsmall$HostCorrectedName))
+setdiff(b$Var1, names(global.mam.mpd))->kickout2
+b[-which(b$Var1 %in% kickout2),]->b
+
+freq2<-b[match(mammal_tree$tip.label, b$Var1),]
+
+cor(b$Freq, global.mam.mpd) #r=.023
+ggplot(b, mapping = aes(b$Freq, global.mam.mpd)) + geom_point() 
+#Vulpes vulpes has 927 observations
+
+##without Vulpes vulpes
+ggplot(b, mapping = aes(b$Freq, global.mam.mpd)) + 
+  geom_point() +
+  xlim(0,220)+
+  geom_smooth(method='lm', col='grey38')+
+  labs(x='No. of Mammal Observations', y='Mammal MPD')+
+  theme_classic()
+
+
+##########################
+####### Nearctic #########
+##########################
+
+##test data bias, correlation between para.mpd and no. of citations
+setdiff(nearctic_abund_data$Parasite, names(nearctic.para.mpd))->kickout
+nearctic_abund_data[-which(nearctic_abund_data$Parasite %in% kickout),]->c
+
+freq<-c[match(nearctic_tree$tip.label, c$Parasite),]
+
+cor(c$Freq, nearctic.para.mpd) #r=-0.063
+ggplot(c, mapping = aes(c$Freq,nearctic.para.mpd)) + 
+  geom_point() +
+  xlim(0,16)+
+  geom_smooth(method='lm', col='grey38')+
+  labs(x='No. of Parasite Observations', y='Parasite MPD')+
+  theme_classic() 
+
+
+```
+ 
+
 
 
 
@@ -1682,24 +2145,32 @@ global_df %>%
 
 #Saguinus mystax infected by two
 help$'Saguinus mystax' == 1 #27 and 210 
-help[27,]  #Dipetalonema graciliformis
-help[210,] #Hymenolepis diminuta
+help[27,]  #Dipetalonema graciliformis (mpd == 18.14)
+help[210,] #Hymenolepis diminuta (mpd == 96.2)
 
 #Macaca fascicularis infected by four
 help$'Macaca fascicularis' == 1 #86, 136, 164, 200
 help[86,]  #Oesophagostomum aculeatum
 help[136,] #Strongyloides fuelleborni
-help[164,] #Trichuris trichiura
+help[164,] #Trichuris trichiura (mpd == 37.97)
 help[200,] #Paragonimus westermani
 
 #Macaca cyclopis infected by two
 help$'Macaca cyclopis' == 1
-help[50,]  #Enterobius macaci
+help[50,]  #Enterobius macaci (mpd == 3.61)
 help[200,] #Paragonimus westermani
 
 #Alouatta seniculus infected by two
 help$'Alouatta seniculus' == 1  #55, 164
-help[55,]  #Trypanoxyuris minutus
-help[164,] #Trichuris trichiura
+help[55,]  #Trypanoxyuris minutus (mpd == 18.79)
+help[164,] #Trichuris trichiura (mpd == 37.97)
+
+#Papio hamadryas
+help$'Papio hamadryas' == 1 #51, 211
+help[51,] #Enterobius vermicularis
+help[211,] #Hymenolepis nana (mpd == 0)
+
+
+
 ```
 
