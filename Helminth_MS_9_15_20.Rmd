@@ -1528,7 +1528,7 @@ subset(b_para_subset, Sex=="f") %>%
   group_by(Parasite.species) %>%
   summarise(mean_w=mean(Width, na.rm = TRUE)) ->data_fem_wid
 
-## combine length and width in a meaningful way to calculate 'body size' (L*W)?
+## combine length and width to calculate 'body size' (L*W)?
 b.size<-left_join(data_fem_len, data_fem_wid, by="Parasite.species")
 b.size$ratio<-(b.size$mean_l*b.size$mean_w)
 
