@@ -1949,8 +1949,8 @@ MAM_FIG<-ggplot()+
   geom_point(new_fig_data, mapping=aes(x=global.mpd, y= distance, size = count))+
   geom_text_repel(smaller_data, mapping=aes(x=global.mpd, y=distance, label = name),
                   size=2,
-                  vjust = .4,
-                  point.padding = .05)+
+                  vjust = 0,
+                  point.padding = .7)+
   labs(y= "PD to Humans", x = " ")+
   scale_y_continuous(limits = c(0,210))+
   theme_bw()+
@@ -2018,7 +2018,7 @@ NEARCTIC_MAM<-ggplot()+
   geom_point(nearctic_summary_data, mapping=aes(x=nearctic.mpd, y= distance, size = count))+
   geom_text_repel(nearctic_smaller_data, mapping=aes(x=nearctic.mpd, y=distance, label = name),
                   size=2,
-                  vjust = .4,
+                  vjust = 2,
                   point.padding = .05)+
   labs(y= " ", x = " ")+
   scale_y_continuous(limits = c(0,210))+
@@ -2034,7 +2034,7 @@ NEARCTIC_MAM<-ggplot()+
 
 Fig3<-MAM_FIG + NEARCTIC_MAM
 
-ggsave("~/Desktop/figure_three.pdf", Fig3, width = 5, height = 5)
+ggsave("~/Desktop/figure_three.pdf", Fig3, width = 6, height = 5)
 ```
 
 
