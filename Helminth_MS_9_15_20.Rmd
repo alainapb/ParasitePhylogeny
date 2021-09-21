@@ -6,12 +6,13 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE,
+                      dev=c('png','tiff'),
+                      fig.path='figures/')
+
 library(ape)
-library(plyr)
 library(tidyverse)
 library(ouch)
-library(dplyr)
 library(phytools)
 library(geiger)
 library(caper)
@@ -23,60 +24,21 @@ library(OUwie)
 ```
 
 
-```{r load_in_APBs_helminth_tree, include=FALSE}
+```{r load_in_data, include=FALSE}
 
+nearctic_mammal_tree <- readRDS("Nearctic_mammal_tree.RDS")
+nearctic_parasite_tree <- readRDS("Nearctic_parasite_tree.RDS")
+nearctic_data <- readRDS("Nearctic_data.RDS")
 
-## load tree
-tree<-read.nexus("hel2_44burn_copy.trees")
-
-## load the binomial names for the coded tree names
-nom <- read.csv("name_key.csv")
-
-# make nom characters not factors
-nom$CorrectName<-as.character(nom$CorrectName)
-nom$Code<-as.character(nom$Code)
-
-## ensure that every tip has a binomial name
-which(!(tree$tip.label %in% nom[,2])) ## ZTGLUN does not have a binomial name
-
-## drop it from the tree
-hel_tree <- drop.tip(tree, "ZTGLUN")
-tree <- drop.tip(hel_tree, "HABMUS") #nematodes in the wrong area of the tree
-tree <- drop.tip(tree, "ASCLUM") #nematodes in the wrong area of the tree
-tree <- drop.tip(tree, "ASCSUU") #nematodes in the wrong area of the tree
-tree <- drop.tip(tree, "PELSTR") #nematodes in the wrong area of the tree
-
-##binomial names for only the species in the tree
-nom[nom$Code %in% tree$tip.label,]->a
-
-##nom in same order as tree tip labels
-b<- a[match(tree$tip.label, a$Code),]
-
-#replace code names with binomial names
-tree$tip.label<-b$CorrectName
-
-#check
-plot(tree, cex=0.3, type = "f")
-
-#rename the global tree for GMPD data
-global_tree<-tree
-
-#check
-plot(global_tree)
-
-global_tree<-drop.tip(global_tree, c("Filaria martis","Prosthenorchis elegans")) #249 species
+gmpd_mammal_tree <- readRDS("GMPD_mammal_tree.RDS")
+gmpd_parasite_tree <- readRDS("GMPD_parasite_tree.RDS")
+gmpd_data <- readRDS("GMPD_data.RDS")
 
 ```
 
 
 
 ```{r load_nearctic_data, include = FALSE}
-#host-parasite association data
-nearctic_assoc_data<-read.csv("Host_Range_Nearctic_Mammals_list.csv", header=T)
-
-#change to characters instead of factors
-nearctic_assoc_data$Host<-as.character(nearctic_assoc_data$Host)
-nearctic_assoc_data$Parasite<-as.character(nearctic_assoc_data$Parasite)
 
 #parasite abundance/occurence data
 nearctic_abund_data<-read.csv("Host_Range_Nearctic_Mammals.csv")
@@ -84,114 +46,20 @@ nearctic_abund_data<-read.csv("Host_Range_Nearctic_Mammals.csv")
 #change to characters instead of factors
 nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
 
-```
-
-
-
-```{r load_global_data_from_GMPD, include =FALSE}
-## Read in GMPD data
-GMPDmain<-read.csv("GMPD_main.csv")
-GMPDparasite<-read.csv("GMPD_parasite_traits.csv")
-
-## Load GMPD data and subset down to the species in the parasite phylogeny
-GMPDsmall<-GMPDmain[GMPDmain$ParasiteCorrectedName %in% global_tree$tip.label, ]
-
 
 ```
-
-
-
-```{r mammal_data_from_PHYLACINE, include=FALSE}
-
-##load complete mammal tree from PHYLACINE
-large_mam_tree<-read.nexus("mammal_phylo_consensus.nex")
-
-
-large_mam_tree$tip.label<-gsub("_", " ", large_mam_tree$tip.label)
-
-setdiff(GMPDsmall$HostCorrectedName, large_mam_tree$tip.label)
-
-#### Make sure host names in the GMPD match host names in the PHYLACINE tree ####
-
-#check the differences
-setdiff(GMPDsmall$HostCorrectedName, small_mam_tree$tip.label)
-
-#Make names match Elton binomial names
-GMPDsmall$HostCorrectedName<-gsub("Cercopithecus albogularis", "Cercopithecus mitis", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus burchelli", "Equus quagga", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus quaggai", "Equus quagga", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Otaria flavescens", "Otaria byronia", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Cercopithecus lhoesti","Allochrocebus lhoesti", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus caballus","Equus ferus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Lama glama","Lama guanicoe", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Bos frontalis","Bos gaurus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus asinus", "Equus hemionus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus asinus", "Equus hemionus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Monachus schauinslandi", "Neomonachus schauinslandi", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Neotragus moschatus", "Neotragus pygmaeus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Ovis aries", "Ovis orientalis", GMPDsmall$HostCorrectedName)
-
-
-##remove the ones without a name
-GMPDsmall <- GMPDsmall[GMPDsmall$HostCorrectedName!="no binomial name",]
-
-
-#### MAKE A MAMMAL TREE FOR HOSTS IN THE NEARCTIC DATASET ####
-
-##prune large tree to only include mammals from the Nearctic dataset
-setdiff(large_mam_tree$tip.label, nearctic_assoc_data$Host)->bye
-nearctic_mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%bye)])
-plot(nearctic_mammal_tree, cex=0.3)
-
-#check if any hosts are missing
-setdiff(nearctic_assoc_data$Host, nearctic_mammal_tree$tip.label)->missing
-missing # "Mustela vison", "Alces americanus", "Alopex lagopus", "Erethizon dorsatus"
-
-
-#### MAKE A MAMMAL TREE FOR HOSTS IN THE GMPD DATASET ####
-
-#prune small tree to only include mammals from the GMPD
-setdiff(large_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->bye2
-GMPD_mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%bye2)])
-plot(GMPD_mammal_tree, cex=0.3)
-
-
-```
-
-
-
 
 ```{r calculate_mpd_for_nearctic_data, include= TRUE}
 
-##subset global tree to nearctic data
-setdiff(global_tree$tip.label, nearctic_assoc_data$Parasite)->bye3
-nearctic_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye3)])
-plot(nearctic_tree, cex=0.3)
-
 #interspecific distance matrix of parasites
-nearctic_dis_para<-cophenetic.phylo(nearctic_tree) 
+nearctic_dis_para<-cophenetic.phylo(nearctic_parasite_tree) 
 
-#intespecific distance matrix of mammals 
+#interspecific distance matrix of mammals 
 nearctic_dis_mam<-cophenetic.phylo(nearctic_mammal_tree) 
 
-##make the pipeline to get the absense/presence of 
-##each parasite (rows) that infect a given host (column)
-
+## Create an association matrix with host across the columns and parasites across the rows
 nearctic_mamlist<-as.vector(nearctic_mammal_tree$tip.label) #list of mammals in tip label order
-
-nearctic_para_list<-as.vector(nearctic_tree$tip.label) #list of parasites
+nearctic_para_list<-as.vector(nearctic_parasite_tree$tip.label) #list of parasites
 
 #make a dataframe with host names as columns and parasite names as rows
 nearctic_df <- data.frame(matrix(ncol=length(nearctic_mamlist),nrow=length(nearctic_para_list)), row.names = nearctic_para_list)
@@ -199,13 +67,11 @@ colnames(nearctic_df)<-nearctic_mamlist
 
 # complete dataframe with association data, 
 # where 0 = not found in host and 1 = found in host
-
 for (i in 1:nrow(nearctic_df))
-  nearctic_df[i,] <- (colnames(nearctic_df) %in% unique(subset(nearctic_assoc_data, Parasite==rownames(nearctic_df)[i])$Host)) %>% as.numeric
+  nearctic_df[i,] <- (colnames(nearctic_df) %in% unique(subset(nearctic_data, Parasite==rownames(nearctic_df)[i])$Host)) %>% as.numeric
 
 #save matrix
 write.csv(nearctic_df,file = "association_matrix_neoartic.csv", row.names = TRUE, col.names = TRUE)
-
 
 ## Create MPD scores for every parasite using the Phylacine mammal tree 
 nearctic.para.mpd <- mpd(nearctic_df, nearctic_dis_mam)
