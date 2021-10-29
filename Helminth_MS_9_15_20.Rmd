@@ -1496,6 +1496,7 @@ host_trait_data<-data.frame("Parasite" = ss$ParasiteCorrectedName,
                             "Mass.g" = ss$Mass.g)
 
 
+
 host_trait_data %>% 
   group_by(Parasite) %>% 
   summarise(avgMass=mean(Mass.g,na.rm=T)) -> Host_mass
@@ -1520,7 +1521,7 @@ remove_nearctic_traits <- remove_nearctic_traits[match(remove_nearctic_pgls$tip.
 #gmpd with single hosts = 0
 gmpd_traits<-Host_mass
 #put in tree tip label order
-gmpf_traits <- gmpd_traits[match(gmpd_pgls$tip.label, gmpd_traits$Parasite),]
+gmpd_traits <- gmpd_traits[match(gmpd_pgls$tip.label, gmpd_traits$Parasite),]
 
 
 #gmpd with single hosts removed
@@ -1559,10 +1560,10 @@ remove_gmpd_trans<-remove_gmpd_trans[match(remove_gmpd_pgls$tip.label, remove_gm
 ##with single host species MPD = 0
 
 #clean nearctic.mam.mpd
-pgls.nearctic.para.mpd<-nearctic.para.mpd[match(nearctic_pgls$tip.label, names(nearctic.para.mpd))]
+pgls_nearctic_para_mpd<-nearctic_para_mpd[match(nearctic_pgls$tip.label, names(nearctic_para_mpd))]
 
 nearctic_dat<-data.frame(taxa=nearctic_pgls$tip.label,
-                para.mpd=pgls.nearctic.para.mpd,
+                para.mpd=pgls_nearctic_para_mpd,
                 para.l=nearctic.b.size$mean_l,
                 para.w=nearctic.b.size$mean_w,
                 para.b=nearctic.b.size$ratio,
@@ -1578,24 +1579,24 @@ print(nearctic_cdat)
 ## model testing ##
 
 #all predictors
-nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, nearctic_cdat, lambda = .384)
+nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, nearctic_cdat, lambda = .363)
 summary(nearctic_mod)
 anova(nearctic_mod)
 
 #removed parasite length 
-nearctic_mod2<-pgls(para.mpd ~ close + nonclose + intermediate + host_mass, nearctic_cdat, lambda=.384) #host mass is significant
+nearctic_mod2<-pgls(para.mpd ~ close + nonclose + intermediate + host_mass, nearctic_cdat, lambda=.363) #host mass is significant
 summary(nearctic_mod2)
 anova(nearctic_mod2)
 
 #removed parasite length and close transmission
-nearctic_mod3<-pgls(para.mpd ~ nonclose + intermediate + host_mass, nearctic_cdat, lambda=.384) 
+nearctic_mod3<-pgls(para.mpd ~ nonclose + intermediate + host_mass, nearctic_cdat, lambda=.363) 
 summary(nearctic_mod3)
 anova(nearctic_mod3)
 
 anova(nearctic_mod2, nearctic_mod3)
 
 #removed parasite length and close transmission + intermediate ##### BEST MODEL #####
-nearctic_mod4<-pgls(para.mpd ~ nonclose + host_mass, nearctic_cdat, lambda=.384) 
+nearctic_mod4<-pgls(para.mpd ~ nonclose + host_mass, nearctic_cdat, lambda=.363) 
 summary(nearctic_mod4)
 anova(nearctic_mod4)
 
@@ -1603,7 +1604,7 @@ anova(nearctic_mod3, nearctic_mod4)
 
 
 #only host mass ##### BEST MODEL #####
-nearctic_mod5<-pgls(para.mpd ~  host_mass, nearctic_cdat, lambda=.384) 
+nearctic_mod5<-pgls(para.mpd ~  host_mass, nearctic_cdat, lambda=.363) 
 summary(nearctic_mod5)
 anova(nearctic_mod5)
 
@@ -1612,18 +1613,16 @@ anova(nearctic_mod4, nearctic_mod5)
 ```
 
 
-
-
 ```{r pgls_nearctic_shR, include=FALSE}
 ###NEARCTIC DATASET####
 
 ##with single host species removed
 
 #clean nearctic.mam.mpd
-pgls.remove.n.para.mpd<-nearctic.para.mpd[match(remove_nearctic_pgls$tip.label, names(nearctic.para.mpd.remove))]
+pgls_remove_n_para_mpd<-nearctic_para_mpd_no_specialists[match(remove_nearctic_pgls$tip.label, names(nearctic_para_mpd_no_specialists))]
 
 remove_nearctic_dat<-data.frame(taxa=remove_nearctic_pgls$tip.label,
-                para.mpd=pgls.remove.n.para.mpd,
+                para.mpd=pgls_remove_n_para_mpd,
                 para.l=remove.nearctic.b.size$mean_l,
                 para.w=remove.nearctic.b.size$mean_w,
                 para.b=remove.nearctic.b.size$ratio,
@@ -1639,12 +1638,12 @@ print(remove_nearctic_cdat)
 ## model testing ##
 
 #all predictors 
-remove_nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_nearctic_cdat, lambda = .926)
+remove_nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_nearctic_cdat, lambda = .904)
 summary(remove_nearctic_mod)
 anova(remove_nearctic_mod)
 
 #removed host mass  ####### BEST MODEL #######
-remove_nearctic_mod2<-pgls(para.mpd~ para.l + close + nonclose + intermediate, remove_nearctic_cdat, lambda = .926)
+remove_nearctic_mod2<-pgls(para.mpd~ para.l + close + nonclose + intermediate, remove_nearctic_cdat, lambda = .904)
 summary(remove_nearctic_mod2) 
 anova(remove_nearctic_mod2)
 
@@ -1652,72 +1651,68 @@ anova(remove_nearctic_mod, remove_nearctic_mod2)
 
 
 #removed host mass and close transmission
-remove_nearctic_mod3<-pgls(para.mpd~ para.l + nonclose + intermediate , remove_nearctic_cdat, lambda = .926)
+remove_nearctic_mod3<-pgls(para.mpd~ para.l + nonclose + intermediate , remove_nearctic_cdat, lambda = .904)
 summary(remove_nearctic_mod3) #worse model than ^^^
 anova(remove_nearctic_mod3)
 
 ```
 
-
-
-
+#PGLS of GMPD
 ```{r pgls_global_sh0, include=FALSE}
 
 ###GLOBAL DATASET####
 
 ##with single host species MPD = 0
 
-#clean global.mam.mpd
-pgls.global.para.mpd<-global.para.mpd[match(global_pgls$tip.label, names(global.para.mpd))]
+#clean gmpf_para_mpd
+pgls_gmpd_para_mpd<-gmpd_para_mpd[match(gmpd_pgls$tip.label, names(gmpd_para_mpd))]
 
-global_dat<-data.frame(taxa=global_pgls$tip.label,
-                para.mpd=pgls.global.para.mpd,
-                para.l=global.b.size$mean_l,
-                para.w=global.b.size$mean_w,
-                para.b=global.b.size$ratio,
-                close=as.factor(global_trans$close),
-                nonclose=as.factor(global_trans$nonclose),
-                intermediate=as.factor(global_trans$intermediate),
-                host_mass=global_traits$avgMass)
+gmpd_dat<-data.frame(taxa=gmpd_pgls$tip.label,
+                para.mpd=pgls_gmpd_para_mpd,
+                para.l=gmpd.b.size$mean_l,
+                para.w=gmpd.b.size$mean_w,
+                para.b=gmpd.b.size$ratio,
+                close=as.factor(gmpd_trans$close),
+                nonclose=as.factor(gmpd_trans$nonclose),
+                intermediate=as.factor(gmpd_trans$intermediate),
+                host_mass=gmpd_traits$avgMass)
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
-global_cdat<-comparative.data(data=global_dat, phy=global_pgls, names.col = "taxa")
-print(global_cdat)
+gmpd_cdat<-comparative.data(data=gmpd_dat, phy=gmpd_pgls, names.col = "taxa")
+print(gmpd_cdat)
 
 ## model testing ##
 
 #all predictors
-global_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, global_cdat, lambda = .607)
-summary(global_mod)
-anova(global_mod)
+gmpd_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, gmpd_cdat, lambda = .615)
+summary(gmpd_mod)
+anova(gmpd_mod)
 
 #removed host mass
-global_mod2 <- pgls(para.mpd~ para.l + close + nonclose + intermediate, global_cdat, lambda = .607)
-summary(global_mod2)
-anova(global_mod2)
+gmpd_mod2 <- pgls(para.mpd~ para.l + close + nonclose + intermediate, gmpd_cdat, lambda = .615)
+summary(gmpd_mod2)
+anova(gmpd_mod2)
 
 
 #removed nonclose and host mass
-global_mod3 <- pgls(para.mpd~ para.l + close + intermediate, global_cdat, lambda = .607)
-summary(global_mod3) 
-anova(global_mod3)
+gmpd_mod3 <- pgls(para.mpd~ para.l + close + intermediate, gmpd_cdat, lambda = .615)
+summary(gmpd_mod3) 
+anova(gmpd_mod3)
 
 #only parasite length and close transmission
-global_mod4<-pgls(para.mpd ~ para.l + close, global_cdat, lambda = .607)
-summary(global_mod4) 
-anova(global_mod4)
+gmpd_mod4<-pgls(para.mpd ~ para.l + close, gmpd_cdat, lambda = .615)
+summary(gmpd_mod4) 
+anova(gmpd_mod4)
 
 #only close transmission  #### BEST MODEL ####
-global_mod5<-pgls(para.mpd ~ close, global_cdat, lambda = .607)
-summary(global_mod5) 
-anova(global_mod5)
+gmpd_mod5<-pgls(para.mpd ~ close, gmpd_cdat, lambda = .615)
+summary(gmpd_mod5) 
+anova(gmpd_mod5)
 
-anova(global_mod4, global_mod5)
+anova(gmpd_mod4, gmpd_mod5)
 
 
 ```
-
-
 
 
 ```{r pgls_global_shR, include = FALSE}
@@ -1725,70 +1720,63 @@ anova(global_mod4, global_mod5)
 
 ##with single host species removed
 
-#clean nearctic.mam.mpd
-pgls.remove.g.para.mpd<-global.para.mpd[match(remove_global_pgls$tip.label, names(global.para.mpd.remove))]
+#clean gmpd_para_mpd_no_specialists
+pgls_remove_g_para_mpd<-gmpd_para_mpd_no_specialists[match(remove_gmpd_pgls$tip.label, names(gmpd_para_mpd_no_specialists))]
 
-remove_global_dat<-data.frame(taxa=remove_global_pgls$tip.label,
-                para.mpd=pgls.remove.g.para.mpd,
-                para.l=remove.global.b.size$mean_l,
-                para.w=remove.global.b.size$mean_w,
-                para.b=remove.global.b.size$ratio,
-                close=as.factor(remove_global_trans$close),
-                nonclose=as.factor(remove_global_trans$nonclose),
-                intermediate=as.factor(remove_global_trans$intermediate),
-                host_mass=remove_global_traits$avgMass)
+remove_gmpd_dat<-data.frame(taxa=remove_gmpd_pgls$tip.label,
+                para.mpd=pgls_remove_g_para_mpd,
+                para.l=remove.gmpd.b.size$mean_l,
+                para.w=remove.gmpd.b.size$mean_w,
+                para.b=remove.gmpd.b.size$ratio,
+                close=as.factor(remove_gmpd_trans$close),
+                nonclose=as.factor(remove_gmpd_trans$nonclose),
+                intermediate=as.factor(remove_gmpd_trans$intermediate),
+                host_mass=remove_gmpd_traits$avgMass)
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
-remove_global_cdat<-comparative.data(data=remove_global_dat, phy=remove_global_pgls, names.col = "taxa")
-print(remove_global_cdat)
+remove_gmpd_cdat<-comparative.data(data=remove_gmpd_dat, phy=remove_gmpd_pgls, names.col = "taxa")
+print(remove_gmpd_cdat)
 
 ## model testing ##
 
 #all predictors
-remove_global_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_global_cdat, lambda = .895)
-summary(remove_global_mod)
-anova(remove_global_mod)
+remove_gmpd_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_gmpd_cdat, lambda = .896)
+summary(remove_gmpd_mod)
+anova(remove_gmpd_mod)
 
 #removed host mass
-remove_global_mod2 <- pgls(para.mpd~ para.l + close + nonclose + intermediate, remove_global_cdat, lambda = .895)
-summary(remove_global_mod2) 
-anova(remove_global_mod2)
+remove_gmpd_mod2 <- pgls(para.mpd~ para.l + close + nonclose + intermediate, remove_gmpd_cdat, lambda = .896)
+summary(remove_gmpd_mod2) 
+anova(remove_gmpd_mod2)
 
 
 #removed nonclose and host mass
-remove_global_mod3 <- pgls(para.mpd~ para.l + close + intermediate, remove_global_cdat, lambda = .895)
-summary(remove_global_mod3) 
-anova(remove_global_mod3)
+remove_gmpd_mod3 <- pgls(para.mpd~ para.l + close + intermediate, remove_gmpd_cdat, lambda = .896)
+summary(remove_gmpd_mod3) 
+anova(remove_gmpd_mod3)
 
 
 #just parasite length + close
-remove_global_mod4 <- pgls(para.mpd~ para.l  + close, remove_global_cdat, lambda = .895)
-summary(remove_global_mod4) 
-anova(remove_global_mod4)
+remove_gmpd_mod4 <- pgls(para.mpd~ para.l  + close, remove_gmpd_cdat, lambda = .896)
+summary(remove_gmpd_mod4) 
+anova(remove_gmpd_mod4)
 
 #just close transmission  #### BEST MODEL ####
-remove_global_mod5 <- pgls(para.mpd~ close, remove_global_cdat, lambda = .895)
-summary(remove_global_mod5) 
-anova(remove_global_mod5)
-
+remove_gmpd_mod5 <- pgls(para.mpd~ close, remove_gmpd_cdat, lambda = .896)
+summary(remove_gmpd_mod5) 
+anova(remove_gmpd_mod5)
 
 ```
 
 
-
 ```{r mammal_tree_with_host_mpd, echo = TRUE}
-
 #### NEARCTIC DATASET ####
-
 #single parasite species have mpd = 0
-contMap(nearctic_mammal_tree, nearctic.mam.mpd, fsize=0.3, lwd =1)
-
+contMap(nearctic_mammal_tree, nearctic_mam_mpd, fsize=0.3, lwd =1)
 
 #### GLOBAL DATASET ####
-
 #single parasite species have mpd = 0
-contMap(GMPD_mammal_tree, global.mam.mpd, fsize=0.3, lwd =1, type ="fan")
-
+contMap(gmpd_mammal_tree, gmpd_mam_mpd, fsize=0.3, lwd =1, type ="fan") ## gmpd_mammal_tree has 199 and gmpd_mam_mpd has 198
 
 ```
 
