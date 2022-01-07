@@ -49,52 +49,72 @@ nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
 ```
 
 #Accounting for research effort using the rentrez package searching Pubmed
-```{r rentrez_package, include=TRUE}
+```{r rentrez_package, include=TRUE, eval=FALSE}
 #### GMPD ####
 #parasite search
 gmpd_para_pubs <- data.frame(term = gmpd_parasite_tree$tip.label,
-                        pubs = NA)
+                        pubs = NA,
+                        cites = NA)
 
 for (i in 1:nrow(gmpd_para_pubs)){
   print(gmpd_para_pubs$term[i])
- try1<-entrez_search(db="pubmed", term= gmpd_para_pubs$term[i])
-gmpd_para_pubs$pubs[i] <- try1$count 
+  ## Check GMPD to see if there are alternative names for this parasite in the GMPD
+  c(gmpd_data$ParasiteReportedName[gmpd_data$ParasiteCorrectedName==gmpd_para_pubs$term[i]], ## all reported names for this parasite
+    gmpd_para_pubs$term[i]) %>% unique -> names
+  if (length(names)==1) ## if only one name
+    entrez_search(db="pubmed", term=paste0("(\"",gmpd_para_pubs$term[i],"\"[All Fields])"))$count -> gmpd_para_pubs$pubs[i]
+  else ## if multiple names
+    sapply(names, function(n) entrez_search(db="pubmed", term=paste0("(\"",n,"\"[All Fields])"))$count) %>% sum -> gmpd_para_pubs$pubs[i]
+  ## number of unique citations for this parasites in the GMPD
+  gmpd_para_pubs$cites[i] <- length(unique(gmpd_data$Citation[which(gmpd_data$ParasiteCorrectedName==gmpd_para_pubs$term[i])]))
 }
 
 #host search
-gmpd_host_pubs<-data.frame(term= gmpd_mammal_tree$tip.label, pubs = NA)
+gmpd_host_pubs<-data.frame(term= gmpd_mammal_tree$tip.label, 
+                           pubs = NA, 
+                           cites = NA)
 
 for (i in 1:nrow(gmpd_host_pubs)){
- try1<-entrez_search(db="pubmed", term= paste0(gmpd_host_pubs$term[i], "+ parasite"))
-gmpd_host_pubs$pubs[i] <- try1$count 
+  print(gmpd_host_pubs$term[i])
+  ## Check GMPD to see if there are alternative names for this host in the GMPD
+  c(gmpd_data$HostReportedName[gmpd_data$HostCorrectedName==gmpd_host_pubs$term[i]], ## all reported names for this host
+    gmpd_host_pubs$term[i]) %>% unique -> names
+  if (length(names)==1) ## if only one name
+    entrez_search(db="pubmed", term=paste0("(\"",gmpd_host_pubs$term[i],"\"[All Fields]) AND ((\"parasites\"[MeSH Terms] OR \"parasites\"[All Fields] OR \"parasite\"[All Fields]) OR (\"helminths\"[MeSH Terms] OR \"helminths\"[All Fields] OR \"helminth\"[All Fields]))"))$count -> gmpd_host_pubs$pubs[i]
+  else ## if multiple names
+    sapply(names, function(n) entrez_search(db="pubmed", term=paste0("(\"",n,"\"[All Fields]) AND ((\"parasites\"[MeSH Terms] OR \"parasites\"[All Fields] OR \"parasite\"[All Fields]) OR (\"helminths\"[MeSH Terms] OR \"helminths\"[All Fields] OR \"helminth\"[All Fields]))"))$count) %>% sum -> gmpd_host_pubs$pubs[i]
+  
+  ## number of unique citations for this parasites in the GMPD
+  gmpd_host_pubs$cites[i] <- length(unique(gmpd_data$Citation[which(gmpd_data$HostCorrectedName==gmpd_host_pubs$term[i])]))
 }
-
 
 #### Nearctic ####
-#parasite search 
-nearctic_para_pubs<-data.frame(term=nearctic_parasite_tree$tip.label, pubs = NA)
+## subset the gmpd_para_pubs to the parasites found in the Nearctic dataset
+nearctic_para_pubs <- gmpd_para_pubs[gmpd_parasite_tree$tip.label%in%nearctic_parasite_tree$tip.label,c(1,2)]
 
-for (i in 1:nrow(nearctic_para_pubs)){
-  
-  print(nearctic_para_pubs$term[i])
-  
- try1<-entrez_search(db="pubmed", term= nearctic_para_pubs$term[i])
-nearctic_para_pubs$pubs[i] <- try1$count 
-}
-
-
-#host search
-nearctic_host_pubs<-data.frame(term=nearctic_mammal_tree$tip.label, pubs=NA)
-
+## 
+nearctic_host_pubs <- data.frame(term=nearctic_mammal_tree$tip.label,
+                                 pubs=NA)
 for (i in 1:nrow(nearctic_host_pubs)) {
   print(nearctic_host_pubs$term[i])
-  
-  try1<-entrez_search(db="pubmed", term = paste0(nearctic_host_pubs$term[i], " + parasite"))
-  nearctic_host_pubs$pubs[i] <- try1$count
+  ## if this host is in the gmpd_host_pubs dataframe, just pull in its data
+  if(nearctic_host_pubs$term[i]%in%gmpd_host_pubs$term)
+    nearctic_host_pubs$pubs[i] <- gmpd_host_pubs$pubs[which(gmpd_host_pubs$term==nearctic_host_pubs$term[i])]
+  else { ## search for it in pubmed
+    try1<-entrez_search(db="pubmed", term=paste0("(\"",nearctic_host_pubs$term[i],"\"[All Fields]) AND ((\"parasites\"[MeSH Terms] OR \"parasites\"[All Fields] OR \"parasite\"[All Fields]) OR (\"helminths\"[MeSH Terms] OR \"helminths\"[All Fields] OR \"helminth\"[All Fields]))"))
+    nearctic_host_pubs$pubs[i] <- try1$count
+  }
 }
+
+saveRDS(gmpd_host_pubs, "GMPD_host_pubs.RDS")
+saveRDS(gmpd_para_pubs, "GMPD_para_pubs.RDS")
+saveRDS(nearctic_host_pubs, "Nearctic_host_pubs.RDS")
+saveRDS(nearctic_para_pubs, "Nearctic_para_pubs.RDS")
+
+
 ```
 
-#Calculate MPD for Nearcitc data
+#Calculate MPD for Nearctic data
 ```{r calculate_mpd_for_nearctic_data, include= TRUE}
 
 #interspecific distance matrix of parasites
