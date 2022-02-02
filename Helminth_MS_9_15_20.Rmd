@@ -167,12 +167,6 @@ nearctic_para_mpd_no_specialists<-nearctic_para_mpd_no_specialists[!is.na(nearct
 hist(nearctic_para_mpd, nclass=100)
 hist(nearctic_para_mpd_no_specialists, nclass=100)
 
-plot(log(nearctic_para_pubs$pubs), nearctic_para_mpd)
-lm(nearctic_para_mpd~log(nearctic_para_pubs$pubs)) %>% summary
-plot(nearctic_para_pubs$pubs, nearctic_para_mpd)
-abline(lm(nearctic_para_mpd~nearctic_para_pubs$pubs))
-lm(nearctic_para_mpd~nearctic_para_pubs$pubs) %>% summary
-
 ## Create MPD scores for every host where hosts infected by only one parasite have a mpd = 0 (69 taxa)
 nearctic_mam_mpd <- mpd(t(nearctic_df), nearctic_dis_para)
 nearctic_mam_mpd[is.na(nearctic_mam_mpd)] <- 0 ## hosts infected by only one parasite have MPD of 0
@@ -212,25 +206,6 @@ gmpd_para_mpd_no_specialists <- mpd(gmpd_df, gmpd_dis_mam)
 names(gmpd_para_mpd_no_specialists)<-gmpd_para_list
 gmpd_para_mpd_no_specialists<-gmpd_para_mpd_no_specialists[!is.na(gmpd_para_mpd_no_specialists)] ## one host parasites are removed
 
-## See a fairly strong relationship between MPD and citation count for this data
-plot(log(gmpd_para_pubs$pubs), gmpd_para_mpd)
-lm(gmpd_para_mpd~log(gmpd_para_pubs$pubs)) %>% summary
-plot(gmpd_para_pubs$pubs, gmpd_para_mpd)
-abline(lm(gmpd_para_mpd~gmpd_para_pubs$pubs))
-lm(gmpd_para_mpd~gmpd_para_pubs$pubs) %>% summary
-
-## The relationship persists if you drop the "specialists"
-plot(log(gmpd_para_pubs[gmpd_para_pubs$term%in%names(gmpd_para_mpd_no_specialists),"pubs"]), gmpd_para_mpd_no_specialists)
-lm(gmpd_para_mpd_no_specialists~log(gmpd_para_pubs[gmpd_para_pubs$term%in%names(gmpd_para_mpd_no_specialists),"pubs"])) %>% summary
-
-## And it persists if you drop the most heavily cited species
-library(Hmisc)
-outliers <- gmpd_para_pubs[which(gmpd_para_pubs$pubs > 1000 ),"term"]
-plot(subset(gmpd_para_pubs, term%nin%outliers)$pubs, gmpd_para_mpd[names(gmpd_para_mpd)%nin%outliers])
-lm(gmpd_para_mpd[names(gmpd_para_mpd)%nin%outliers]~subset(gmpd_para_pubs, term%nin%outliers)$pubs) %>% summary
-lm(gmpd_para_mpd[names(gmpd_para_mpd)%nin%outliers]~log(subset(gmpd_para_pubs, term%nin%outliers)$pubs)) %>% summary
-
-
 ## Create MPD scores for every host where hosts infected by only one parasite have a mpd = 0 (199 taxa)
 gmpd_mam_mpd <- mpd(t(gmpd_df), gmpd_dis_para)
 gmpd_mam_mpd[is.na(gmpd_mam_mpd)] <- 0 ## hosts infected by only one parasite have MPD of 0
@@ -244,8 +219,8 @@ gmpd_mam_mpd_no_specialists<-gmpd_mam_mpd_no_specialists[!is.na(gmpd_mam_mpd_no_
 ```
 
 
-#Phylogenetic Signal for MPD of hosts for both datasets
-```{r check_phylogenetic_signal_of_MPD, include =TRUE}
+#Visualizing MPD and Number of Hosts on Phylogenies
+```{r visualizing_range_on_phylogenies, include =TRUE}
 
 #### NEARCTIC DATASET ####
 
@@ -258,51 +233,6 @@ no_specialists_nearctic_parasite_tree<-drop.tip(nearctic_parasite_tree, nearctic
 #plot(remove_nearctic_tree, cex=0.3)
 
 contMap(no_specialists_nearctic_parasite_tree, nearctic_para_mpd_no_specialists, fsize=.3, lwd=1) 
-
-
-##test phylogenetic signal of parasite mpd with single host species = 0
-fitContinuous(nearctic_parasite_tree, nearctic_para_mpd, model="lambda") 
-# lambda = 0.363 ; aicc = 1008.71
-fitContinuous(nearctic_parasite_tree, nearctic_para_mpd, model="white")  
-#                  aicc = 1016.07           
-
-nearctic_mpd_evo<-c(1008.71,1016.07)
-names(nearctic_mpd_evo)<-c("lambda","star")
-nearctic_aic_mpd_signal <- tibble(aicc=nearctic_mpd_evo, model=names(nearctic_mpd_evo))
-nearctic_aic_mpd<-nearctic_aic_mpd_signal %>% 
-   mutate(deltaaicc=aicc-min(aicc), 
-          pow=exp(-.5*deltaaicc),
-          sumpow=sum(pow),
-          waicc=pow/sumpow) %>%
-   dplyr::select(c(2,1,3,6)) %>%
-   arrange(desc(waicc))
-
-nearctic_aic_mpd
-
-
-##test phylogenetic signal of mpd with single host species removed (no specialists)
-fitContinuous(no_specialists_nearctic_parasite_tree, nearctic_para_mpd_no_specialists, model="lambda") 
-#lambda = 0.904; aicc = 800.76
-fitContinuous(no_specialists_nearctic_parasite_tree, nearctic_para_mpd_no_specialists, model="white")  
-#                aicc = 818.83
-
-
-remove_nearctic_mpd_evo<-c(800.76,818.83)
-names(remove_nearctic_mpd_evo)<-c("lambda","star")
-
-remove_nearctic_aic_mpd_signal <- tibble(aicc=remove_nearctic_mpd_evo, model=names(remove_nearctic_mpd_evo))
-
-removed_nearctic_aic_mpd<-remove_nearctic_aic_mpd_signal %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-removed_nearctic_aic_mpd
-
-
 #### GLOBAL DATASET ####
 
 #view mpd with single host species = 0 on the tree
@@ -315,53 +245,6 @@ no_specialists_gmpd_parasite_tree<-drop.tip(gmpd_parasite_tree, gmpd_parasite_tr
 
 contMap(no_specialists_gmpd_parasite_tree, gmpd_para_mpd_no_specialists, fsize=.3, lwd=2, type="fan") 
 
-##test phylogenetic signal of mpd with single host species = 0
-fitContinuous(gmpd_parasite_tree, gmpd_para_mpd, model="lambda") 
-#lambda = 0.615 ; aicc = 2482.56
-fitContinuous(gmpd_parasite_tree, gmpd_para_mpd, model="white")  
-#                 aicc = 2518.64          
-
-
-gmpd_mpd_evo<-c(2482.56,2518.64)
-names(gmpd_mpd_evo)<-c("lambda","star")
-gmpd_aic_mpd_signal <- tibble(aicc=gmpd_mpd_evo, model=names(gmpd_mpd_evo))
-gmpd_aic_mpd<-gmpd_aic_mpd_signal %>% 
-   mutate(deltaaicc=aicc-min(aicc), 
-          pow=exp(-.5*deltaaicc),
-          sumpow=sum(pow),
-          waicc=pow/sumpow) %>%
-   dplyr::select(c(2,1,3,6)) %>%
-   arrange(desc(waicc))
-
-gmpd_aic_mpd
-
-
-##test phylogenetic signal of mpd with single host species removed (no specialists)
-fitContinuous(no_specialists_gmpd_parasite_tree, gmpd_para_mpd_no_specialists, model="lambda") 
-#lambda = 0.896; aicc = 1547.23
-fitContinuous(no_specialists_gmpd_parasite_tree, gmpd_para_mpd_no_specialists, model="white")  
-#                aicc = 1606.19
-
-
-remove_gmpd_mpd_evo<-c(1547.23,1606.19)
-names(remove_gmpd_mpd_evo)<-c("lambda","star")
-
-remove_gmpd_aic_mpd_signal <- tibble(aicc=remove_gmpd_mpd_evo, model=names(remove_gmpd_mpd_evo))
-
-removed_gmpd_aic_mpd<-remove_gmpd_aic_mpd_signal %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-removed_gmpd_aic_mpd
-```
-
-# Phylogenetic Signal for Number of Hosts for both datasets
-```{r check_phylogenetic_signal_of_number_of_hosts, include = TRUE}
-
 #### NEARCTIC DATASET ####
 
 ## Count how many unique hosts each parasite has and put the data frame in the same order as tree tip labels
@@ -370,52 +253,7 @@ names(nearctic_para_nhosts) <- nearctic_abund_data[match(nearctic_parasite_tree$
 ## Remove all the parasites with a single host
 nearctic_para_nhosts_no_specialists <- nearctic_para_nhosts[!nearctic_para_nhosts==1]
 
-##test phylogenetic signal for data with single host species
-fitContinuous(nearctic_parasite_tree, nearctic_para_nhosts, model="lambda") 
-#lambda=0.094,  aicc= 471.32
-fitContinuous(nearctic_parasite_tree, nearctic_para_nhosts, model="white")                 
-#               aicc= 469.62
-
-
-nearctic_no_taxa_evo<-c(471.32, 469.62)
-names(nearctic_no_taxa_evo)<-c("lambda", "star")
-
-nearctic_aic_taxa <- tibble(aicc=nearctic_no_taxa_evo, model=names(nearctic_no_taxa_evo))
-
-nearctic_aic_taxa<-nearctic_aic_taxa %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-nearctic_aic_taxa
-
-##test phylogenetic signal for data without single host species
-fitContinuous(no_specialists_nearctic_parasite_tree, nearctic_para_nhosts_no_specialists, model="lambda") 
-#lambda=0.000,  aicc= 378.61
-fitContinuous(no_specialists_nearctic_parasite_tree, nearctic_para_nhosts_no_specialists, model="white")              
-#               aicc= 376.43
-
-remove_nearctic_no_taxa_evo<-c(378.61, 376.43)
-names(remove_nearctic_no_taxa_evo)<-c("lambda", "star")
-
-remove_nearctic_aic_taxa <- tibble(aicc=remove_nearctic_no_taxa_evo, model=names(remove_nearctic_no_taxa_evo))
-
-remove_nearctic_aic_taxa<-remove_nearctic_aic_taxa %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-remove_nearctic_aic_taxa
-
-
 #### GMPD DATASET ####
-
 gmpd_para_nhosts <- sapply(names(gmpd_para_mpd), function(n) length(unique(gmpd_data$HostCorrectedName[gmpd_data$ParasiteCorrectedName==n])))
 names(gmpd_para_nhosts) <- names(gmpd_para_mpd)
 
@@ -428,50 +266,39 @@ gmpd_para_nhosts_no_specialists <- gmpd_para_nhosts[!gmpd_para_nhosts==1]
 #check
 contMap(no_specialists_gmpd_parasite_tree, gmpd_para_nhosts_no_specialists, fsize=.3, type ="fan")
 
-##test phylogenetic signal for data with single host species
-fitContinuous(gmpd_parasite_tree, gmpd_para_nhosts, model="lambda") 
-#lambda=0.179,  aicc= 1430.38
-fitContinuous(gmpd_parasite_tree, gmpd_para_nhosts, model="white")                 
-#               aicc= 1431.28
+```
 
 
-gmpd_no_taxa_evo<-c(1430.38, 1431.28)
-names(gmpd_no_taxa_evo)<-c("lambda", "star")
+```{r sampling_bias_correction}
+## Run three models:
+## 1. gls using citations to predict MPD;
+## 2. gls using the tree to predict MPD;
+## 3. gls using citations and the tree to predict MPD 
+gmpd_para_pubs$mpd <- unname(gmpd_para_mpd)
+gmpd_para_pubs$nhosts <- unname(gmpd_para_nhosts)
+gls_pubs_mpd_gmpd <- gls(mpd~pubs, data=gmpd_para_pubs)
+gls_tree_mpd_gmpd <- gls(mpd~1, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
+gls_pubs_tree_mpd_gmpd <- gls(mpd~pubs, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
+## Strong evidence that tree + pubs is the best model
+anova(gls_pubs_mpd_gmpd, gls_pubs_tree_mpd_gmpd)
+anova(gls_tree_mpd_gmpd, gls_pubs_tree_mpd_gmpd)
 
-gmpd_aic_taxa <- tibble(aicc=gmpd_no_taxa_evo, model=names(gmpd_no_taxa_evo))
+## Repeat analysis, but without specialists
+gls_pubs_mpd_gmpd_no_spec <- gls(mpd~pubs, data=subset(gmpd_para_pubs, mpd>0))
+gls_tree_mpd_gmpd_no_spec <- gls(mpd~1, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
+gls_pubs_tree_mpd_gmpd_no_spec <- gls(mpd~pubs, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
+## still very strong phylogenetic signal - lambda = 0.94
 
-gmpd_aic_taxa<-gmpd_aic_taxa %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
+anova(gls_pubs_mpd_gmpd_no_spec, gls_pubs_tree_mpd_gmpd_no_spec)
+anova(gls_tree_mpd_gmpd_no_spec, gls_pubs_tree_mpd_gmpd_no_spec)
 
-gmpd_aic_taxa
 
-##test phylogenetic signal for data without single host species
-fitContinuous(no_specialists_gmpd_parasite_tree, gmpd_para_nhosts_no_specialists, model="lambda") 
-#lambda=0.216,  aicc = 932.9
-fitContinuous(no_specialists_gmpd_parasite_tree, gmpd_para_nhosts_no_specialists, model="white")             
-#               aicc = 933.07
-
-remove_gmpd_no_taxa_evo<-c(932.9, 933.07)
-names(remove_gmpd_no_taxa_evo)<-c("lambda", "star")
-
-remove_gmpd_aic_taxa <- tibble(aicc=remove_gmpd_no_taxa_evo, model=names(remove_gmpd_no_taxa_evo))
-
-remove_gmpd_aic_taxa<-remove_gmpd_aic_taxa %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-remove_gmpd_aic_taxa
+gls_nhosts_gmpd <- gls(nhosts~pubs, data=gmpd_para_pubs)
+pgls_nhosts_gmpd <- gls(nhosts~pubs, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
+anova(gls_nhosts_gmpd, pgls_nhosts_gmpd) ## highly significant, suggesting strong phylogenetic signal in MPD
 
 ```
+
 
 
 #Neartic OU Models of MPD by Phyla
