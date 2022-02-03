@@ -352,6 +352,9 @@ anova(gls_pubs_nhosts_nearctic, gls_pubs_tree_nhosts_nearctic)
 ## tree is much better than tree+pubs
 anova(gls_tree_nhosts_nearctic, gls_pubs_tree_nhosts_nearctic)
 ## but lambda is very small, suggesting that neither the number of publications nor the tree itself is telling us much
+gls_null_nhosts_nearctic <- gls(nhosts~1, data=nearctic_para_pubs)
+## this indicates that the tree is not really adding anything either
+anova(gls_tree_nhosts_nearctic, gls_null_nhosts_nearctic)
 
 ## Repeat analysis, but without specialists
 gls_pubs_nhosts_nearctic_no_spec <- gls(nhosts~pubs, data=subset(nearctic_para_pubs, mpd>0))
@@ -361,6 +364,10 @@ gls_pubs_tree_nhosts_nearctic_no_spec <- gls(nhosts~pubs, data=subset(nearctic_p
 anova(gls_pubs_nhosts_nearctic_no_spec, gls_pubs_tree_nhosts_nearctic_no_spec)
 ## tree + pubs is much worse than tree only - based on AIC, the tree-only model far outperforms the pubs-only model, but again the lambda is very low suggesting only weak phylogenetic signal
 anova(gls_tree_nhosts_nearctic_no_spec, gls_pubs_tree_nhosts_nearctic_no_spec)
+
+gls_null_nhosts_nearctic_no_spec <- gls(nhosts~1, data=subset(nearctic_para_pubs, mpd>0))
+## this indicates that the tree is not really adding anything either
+anova(gls_tree_nhosts_nearctic_no_spec, gls_null_nhosts_nearctic_no_spec)
 
 ```
 
