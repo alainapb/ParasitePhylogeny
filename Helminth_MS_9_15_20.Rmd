@@ -270,11 +270,16 @@ contMap(no_specialists_gmpd_parasite_tree, gmpd_para_nhosts_no_specialists, fsiz
 
 
 ```{r sampling_bias_correction}
-## Run three models:
+## Run four models:
 ## 1. gls using citations to predict range (either MPD or number of hosts);
 ## 2. gls using the tree to predict range;
 ## 3. gls using citations and the tree to predict range
-## Compare the model fits using likelihood ratio tests to determine whether there is phylogenetic signal in host range after accounting for sampling bias
+## 4. gls using no predictors (a null model that is equivalent to white noise)
+## From these four models, we do three comparisons:
+## 1. Compare the null model to the tree-only model
+## 2. Compare the tree+pubs model to the tree-only model
+## 3. Compare the tree+pubs model to the pubs-only model
+## The first comparison tell us whether there is any phylogenetic signal. The second comparison tells us whether there is any sampling bias. The third comparison tells us whether there is any phylogenetic signal after accounting for the sampling bias. 
 
 ## GMPD ##
 gmpd_para_pubs$mpd <- unname(gmpd_para_mpd)
@@ -282,41 +287,54 @@ gmpd_para_pubs$nhosts <- unname(gmpd_para_nhosts)
 
 ## Analysis of range as mean pairwise distance
 ## All parasites
+gls_null_mpd_gmpd <- gls(mpd~1, data=gmpd_para_pubs)
 gls_pubs_mpd_gmpd <- gls(mpd~pubs, data=gmpd_para_pubs)
 gls_tree_mpd_gmpd <- gls(mpd~1, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
 gls_pubs_tree_mpd_gmpd <- gls(mpd~pubs, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
-## Strong evidence that tree + pubs is the best model
-anova(gls_pubs_mpd_gmpd, gls_pubs_tree_mpd_gmpd)
+## Strong evidence there is phylogenetic signal, as the tree-only model drastically outperforms the null model
+anova(gls_tree_mpd_gmpd, gls_null_mpd_gmpd)
+## But also evidence for sampling bias
 anova(gls_tree_mpd_gmpd, gls_pubs_tree_mpd_gmpd)
+## Strong evidence phylogenetic signal persists after accounting for the sampling bias
+anova(gls_pubs_mpd_gmpd, gls_pubs_tree_mpd_gmpd)
+
 
 ## Repeat analysis, but without specialists
+gls_null_mpd_gmpd_no_spec <- gls(mpd~1, data=subset(gmpd_para_pubs, mpd>0))
 gls_pubs_mpd_gmpd_no_spec <- gls(mpd~pubs, data=subset(gmpd_para_pubs, mpd>0))
 gls_tree_mpd_gmpd_no_spec <- gls(mpd~1, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
 gls_pubs_tree_mpd_gmpd_no_spec <- gls(mpd~pubs, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
-## tree + pubs is a *much* better model than pubs only
-anova(gls_pubs_mpd_gmpd_no_spec, gls_pubs_tree_mpd_gmpd_no_spec)
-## but tree + pubs isn't really any better than tree only, despite the fact that
-## the number of publications is a a significant predictor in the tree+pubs model
+## Strong evidence there is phylogenetic signal, as the tree-only model drastically outperforms the null model
+anova(gls_tree_mpd_gmpd_no_spec, gls_null_mpd_gmpd_no_spec)
+## No real evidence for sampling bias
 anova(gls_tree_mpd_gmpd_no_spec, gls_pubs_tree_mpd_gmpd_no_spec)
+## Strong evidence phylogenetic signal persists after accounting for the sampling bias
+anova(gls_pubs_mpd_gmpd_no_spec, gls_pubs_tree_mpd_gmpd_no_spec)
 
 ## Analysis of range as number of hosts
 ## All parasites
+gls_null_nhosts_gmpd <- gls(nhosts~1, data=gmpd_para_pubs)
 gls_pubs_nhosts_gmpd <- gls(nhosts~pubs, data=gmpd_para_pubs)
 gls_tree_nhosts_gmpd <- gls(nhosts~1, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
 gls_pubs_tree_nhosts_gmpd <- gls(nhosts~pubs, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
-## Very weak evidence that tree + pubs is much better than pubs only, so phylogenetic signal isn't strong
+## Evidence for phylogenetic signal, as the tree-only model outperforms the null model (p = 0.0136)
+anova(gls_null_nhosts_gmpd, gls_tree_nhosts_gmpd)
+## But also evidence for sampling bias
+anova(gls_tree_nhosts_gmpd, gls_pubs_tree_mpd_gmpd)
+## Evidence that tree + pubs is much better than tree only (p = 0.0342)
 anova(gls_pubs_nhosts_gmpd, gls_pubs_tree_nhosts_gmpd)
-## Strong evidence that tree + pubs is much better than tree only 
-anova(gls_tree_nhosts_gmpd, gls_pubs_tree_nhosts_gmpd)
 
 ## Repeat analysis, but without specialists
+gls_null_nhosts_gmpd_no_spec <- gls(nhosts~1, data=subset(gmpd_para_pubs, mpd>0))
 gls_pubs_nhosts_gmpd_no_spec <- gls(nhosts~pubs, data=subset(gmpd_para_pubs, mpd>0))
 gls_tree_nhosts_gmpd_no_spec <- gls(nhosts~1, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
 gls_pubs_tree_nhosts_gmpd_no_spec <- gls(nhosts~pubs, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree)) 
-## tree + pubs barely  better than pubs only
-anova(gls_pubs_nhosts_gmpd_no_spec, gls_pubs_tree_nhosts_gmpd_no_spec)
-## tree + pubs is NOT better than tree only
+## Evidence for phylogenetic signal, as the tree-only model outperforms the null model (p = 0.0231)
+anova(gls_null_nhosts_gmpd_no_spec, gls_tree_nhosts_gmpd_no_spec)
+## But also evidence for sampling bias
 anova(gls_tree_nhosts_gmpd_no_spec, gls_pubs_tree_nhosts_gmpd_no_spec)
+## Weak evidence for phylogenetic signal after accounting for sampling bias (p = 0.0495)
+anova(gls_pubs_nhosts_gmpd_no_spec, gls_pubs_tree_nhosts_gmpd_no_spec)
 
 
 ## Nearctic database ##
@@ -325,49 +343,53 @@ nearctic_para_pubs$nhosts <- unname(nearctic_para_nhosts)
 
 ## Analysis of range as mean pairwise distance
 ## All parasites
+gls_null_mpd_nearctic <- gls(mpd~1, data=nearctic_para_pubs)
 gls_pubs_mpd_nearctic <- gls(mpd~pubs, data=nearctic_para_pubs)
 gls_tree_mpd_nearctic <- gls(mpd~1, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
 gls_pubs_tree_mpd_nearctic <- gls(mpd~pubs, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
-## tree + pubs is a much better model than pubs only
-anova(gls_pubs_mpd_nearctic, gls_pubs_tree_mpd_nearctic)
-## tree + pubs is a much worse model than tree only (unsurprising, given that pubs has a non-sigificant effect in gls_pubs_mpd_nearctic)
+## Strong evidence for phylogenetic signal in MPD, as the tree-only model drastically outperforms the null model
+anova(gls_null_mpd_nearctic, gls_tree_mpd_nearctic)
+## No evidence for sampling bias
 anova(gls_tree_mpd_nearctic, gls_pubs_tree_mpd_nearctic)
+## Strong evidence for phylogenetic signal in MPD, as the tree+pubs model drastically outperforms the pubs-only model
+anova(gls_pubs_mpd_nearctic, gls_pubs_tree_mpd_nearctic)
 
 ## Repeat analysis, but without specialists
+gls_null_mpd_nearctic_no_spec <- gls(mpd~1, data=subset(nearctic_para_pubs, mpd>0))
 gls_pubs_mpd_nearctic_no_spec <- gls(mpd~pubs, data=subset(nearctic_para_pubs, mpd>0))
 gls_tree_mpd_nearctic_no_spec <- gls(mpd~1, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree))
 gls_pubs_tree_mpd_nearctic_no_spec <- gls(mpd~pubs, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree))
-## tree + pubs is a *much* better model than pubs only
-anova(gls_pubs_mpd_nearctic_no_spec, gls_pubs_tree_mpd_nearctic_no_spec)
-## tree + pubs is a much worse model than tree only (unsurprising, given that pubs has a non-sigificant effect in the pubs-only model)
+## Strong evidence for phylogenetic signal in MPD, as the tree-only model drastically outperforms the null model
+anova(gls_null_mpd_nearctic_no_spec, gls_tree_mpd_nearctic_no_spec)
+## No evidence for sampling bias
 anova(gls_tree_mpd_nearctic_no_spec, gls_pubs_tree_mpd_nearctic_no_spec)
+## Strong evidence for phylogenetic signal in MPD, as the tree+pubs model drastically outperforms the pubs-only model
+anova(gls_pubs_mpd_nearctic_no_spec, gls_pubs_tree_mpd_nearctic_no_spec)
 
 ## Analysis of range as number of hosts
 ## All parasites
+gls_null_nhosts_nearctic <- gls(nhosts~1, data=nearctic_para_pubs)
 gls_pubs_nhosts_nearctic <- gls(nhosts~pubs, data=nearctic_para_pubs)
 gls_tree_nhosts_nearctic <- gls(nhosts~1, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
 gls_pubs_tree_nhosts_nearctic <- gls(nhosts~pubs, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
-## tree+pubs isn't better than pubs only
-anova(gls_pubs_nhosts_nearctic, gls_pubs_tree_nhosts_nearctic)
-## tree is much better than tree+pubs
-anova(gls_tree_nhosts_nearctic, gls_pubs_tree_nhosts_nearctic)
-## but lambda is very small, suggesting that neither the number of publications nor the tree itself is telling us much
-gls_null_nhosts_nearctic <- gls(nhosts~1, data=nearctic_para_pubs)
-## this indicates that the tree is not really adding anything either
+## No evidence for phylogenetic signal in number of hosts, as tree-only does not outperform the null model
 anova(gls_tree_nhosts_nearctic, gls_null_nhosts_nearctic)
+## No evidence for sampling bias
+anova(gls_tree_nhosts_nearctic, gls_pubs_tree_nhosts_nearctic)
+## No evidence for phylogenetic signal here either, as tree+pubs does not outperform a pubs-only model
+anova(gls_pubs_nhosts_nearctic, gls_pubs_tree_nhosts_nearctic)
 
 ## Repeat analysis, but without specialists
+gls_null_nhosts_nearctic_no_spec <- gls(nhosts~1, data=subset(nearctic_para_pubs, mpd>0))
 gls_pubs_nhosts_nearctic_no_spec <- gls(nhosts~pubs, data=subset(nearctic_para_pubs, mpd>0))
 gls_tree_nhosts_nearctic_no_spec <- gls(nhosts~1, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree))
 gls_pubs_tree_nhosts_nearctic_no_spec <- gls(nhosts~pubs, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree)) 
-## tree + pubs is worse than pubs only
-anova(gls_pubs_nhosts_nearctic_no_spec, gls_pubs_tree_nhosts_nearctic_no_spec)
-## tree + pubs is much worse than tree only - based on AIC, the tree-only model far outperforms the pubs-only model, but again the lambda is very low suggesting only weak phylogenetic signal
-anova(gls_tree_nhosts_nearctic_no_spec, gls_pubs_tree_nhosts_nearctic_no_spec)
-
-gls_null_nhosts_nearctic_no_spec <- gls(nhosts~1, data=subset(nearctic_para_pubs, mpd>0))
-## this indicates that the tree is not really adding anything either
+## No evidence for phylogenetic signal in number of hosts, as tree-only does not outperform the null model
 anova(gls_tree_nhosts_nearctic_no_spec, gls_null_nhosts_nearctic_no_spec)
+## No evidence for sampling bias
+anova(gls_tree_nhosts_nearctic_no_spec, gls_pubs_tree_nhosts_nearctic_no_spec)
+## No evidence for phylogenetic signal here either, as tree+pubs does not outperform a pubs-only model
+anova(gls_pubs_nhosts_nearctic_no_spec, gls_pubs_tree_nhosts_nearctic_no_spec)
 
 ```
 
