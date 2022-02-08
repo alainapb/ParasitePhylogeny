@@ -256,12 +256,12 @@ nearctic_para_nhosts_no_specialists <- nearctic_para_nhosts[!nearctic_para_nhost
 #### GMPD DATASET ####
 gmpd_para_nhosts <- sapply(names(gmpd_para_mpd), function(n) length(unique(gmpd_data$HostCorrectedName[gmpd_data$ParasiteCorrectedName==n])))
 names(gmpd_para_nhosts) <- names(gmpd_para_mpd)
+#remove single host species
+gmpd_para_nhosts_no_specialists <- gmpd_para_nhosts[!gmpd_para_nhosts==1]
 
 #check
 contMap(gmpd_parasite_tree, gmpd_para_nhosts, fsize=.3, type = "fan")
 
-#remove single host species
-gmpd_para_nhosts_no_specialists <- gmpd_para_nhosts[!gmpd_para_nhosts==1]
 
 #check
 contMap(no_specialists_gmpd_parasite_tree, gmpd_para_nhosts_no_specialists, fsize=.3, type ="fan")
@@ -320,7 +320,7 @@ gls_pubs_tree_nhosts_gmpd <- gls(nhosts~pubs, data=gmpd_para_pubs, correlation=c
 ## Evidence for phylogenetic signal, as the tree-only model outperforms the null model (p = 0.0136)
 anova(gls_null_nhosts_gmpd, gls_tree_nhosts_gmpd)
 ## But also evidence for sampling bias
-anova(gls_tree_nhosts_gmpd, gls_pubs_tree_mpd_gmpd)
+anova(gls_tree_nhosts_gmpd, gls_pubs_tree_nhosts_gmpd)
 ## Evidence that tree + pubs is much better than tree only (p = 0.0342)
 anova(gls_pubs_nhosts_gmpd, gls_pubs_tree_nhosts_gmpd)
 
@@ -407,55 +407,21 @@ nearctic_parasite_phyla_data<-data.frame(nearctic_parasite_tree$tip.label)
 nearctic_parasite_phyla_data$regime<-g$ParPhylum
 nearctic_parasite_phyla_data$trait<-nearctic_para_mpd
 
-## remake to be able to use ouch rather than OUwie
-nearctic_parasite_ouchtree <- ape2ouch(nearctic_parasite_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-nearctic_parasite_ouchdata <- rep(NA, length=nearctic_parasite_ouchtree@nnodes)
-for (i in 1:length(nearctic_parasite_phyla_data$nearctic_parasite_tree.tip.label))
-  nearctic_parasite_ouchdata[which(nearctic_parasite_ouchtree@nodelabels==nearctic_parasite_phyla_data$nearctic_parasite_tree.tip.label[i])] <- nearctic_parasite_phyla_data$trait[i]
-nearctic_parasite_ouchdata <- as.data.frame(nearctic_parasite_ouchdata)
+## Phylogenetic comparative analysis analysis
+## Convert phyla names to numbers for corHMM
+nearctic_parasite_phyla_data$regAsNum <- as.numeric(as.factor(nearctic_parasite_phyla_data$regime))
+## Get regimes for internal nodes using corHMM
+regimes <- corHMM(nearctic_parasite_tree, nearctic_parasite_phyla_data[,c(1,4)], model="ER", rate.cat=1, node.states = "marginal")
+## Convert internal node regimes back to phylum names and assign to the tree
+nearctic_parasite_tree$node.label <- unname(sapply(as.character(regimes$phy$node.label), function(n) switch(n, "1"="Acanthocephala", "2"="Nematoda", "3"="Platyhelminthes")))
 
-## Find the node that corresponds to the most recent common ancestor of all Platyhelminthes
-## which nodes in the ouchtree correspond to the Plats
-nearctic_parasite_ouchtree@nodelabels%in%nearctic_parasite_phyla_data$nearctic_parasite_tree.tip.label[which(nearctic_parasite_phyla_data$regime=="Platyhelminthes")] %>% which -> platys
-## get their lineages and find the nodes that are in common across all lineages
-nearctic_parasite_ouchtree@lineages[platys] -> platy_lineages
-platy_lineages[[1]][sapply(platy_lineages[[1]], function(n) lapply(platy_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 1
+## Run 3 models: BM, BMS, OUM
+nearctic_mpd_BM_fit <- OUwie(nearctic_parasite_tree, nearctic_parasite_phyla_data[,1:3], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+nearctic_mpd_BMS_fit <- OUwie(nearctic_parasite_tree, nearctic_parasite_phyla_data[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, starting.vals=16500, ub=Inf) ## BMS fails, likely because of fully nested trees
+nearctic_mpd_OUM_fit <- OUwie(nearctic_parasite_tree, nearctic_parasite_phyla_data, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 
-## Find the node that corresponds to the most recent common ancestor of all Acanthocephalans
-## which nodes in the ouchtree correspond to the Acanths
-nearctic_parasite_ouchtree@nodelabels%in%nearctic_parasite_phyla_data$nearctic_parasite_tree.tip.label[which(nearctic_parasite_phyla_data$regime=="Acanthocephala")] %>% which -> acanths
-## get their lineages and find the nodes that are in common across all lineages
-nearctic_parasite_ouchtree@lineages[acanths] -> acanth_lineages
-acanth_lineages[[1]][sapply(acanth_lineages[[1]], function(n) lapply(acanth_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 86
-
-## Find the node that corresponds to the most recent common ancestor of all Nematodes
-## which nodes in the ouchtree correspond to the Nematodes
-nearctic_parasite_ouchtree@nodelabels%in%nearctic_parasite_phyla_data$nearctic_parasite_tree.tip.label[which(nearctic_parasite_phyla_data$regime=="Nematoda")] %>% which -> nematodes
-## get their lineages and find the nodes that are in common across all lineages
-nearctic_parasite_ouchtree@lineages[nematodes] -> nematode_lineages
-nematode_lineages[[1]][sapply(nematode_lineages[[1]], function(n) lapply(nematode_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] #81
-
-## paint the taxonomy-based regimes onto the tree
-paint(nearctic_parasite_ouchtree, subtree=c("1"="Platys","86"="Acanths","81"="Nematodes"), branch=c("1"="Platys")) -> nearctic_oum_regimes
-## paint a single global regime onto the tree
-paint(nearctic_parasite_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> nearctic_ou1_regimes
-
-## Plot to make sure that you end up with a reasonable painting
-plot(nearctic_parasite_ouchtree, regimes=nearctic_oum_regimes)
-
-## Now do the fitting using ouch
-## OUM: AICc = 999.36, alpha = 23.21, sigma.sq = 163380, Acanths = 130.98, Nematodes = 42.84, Platys = 98.22
-nearctic_oum_ouch <- hansen(data=nearctic_parasite_ouchdata, tree=nearctic_parasite_ouchtree, regimes=nearctic_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 1010.38, alpha = 6.699, sigma.sq = 61321.83, global = 73.17
-nearctic_ou1_ouch <- hansen(data=nearctic_parasite_ouchdata, tree=nearctic_parasite_ouchtree, regimes=nearctic_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 1034.35, sigma.sq = 24569.14
-nearctic_bm_ouch <- brown(data=nearctic_parasite_ouchdata, tree=nearctic_parasite_ouchtree)
 
 #######################################
-
 
 ## Nearctic dataset with single host species MPD removed
 
@@ -467,46 +433,6 @@ remove_nearctic_phyla_data<-data.frame(no_specialists_nearctic_parasite_tree$tip
 remove_nearctic_phyla_data$regime<-h$ParPhylum
 remove_nearctic_phyla_data$trait<-nearctic_para_mpd_no_specialists
 
-## remake to be able to use ouch rather than OUwie
-remove_nearctic_ouchtree <- ape2ouch(no_specialists_nearctic_parasite_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-remove_nearctic_ouchdata <- rep(NA, length=remove_nearctic_ouchtree@nnodes)
-for (i in 1:length(remove_nearctic_phyla_data$no_specialists_nearctic_parasite_tree.tip.label))
-  remove_nearctic_ouchdata[which(remove_nearctic_ouchtree@nodelabels==remove_nearctic_phyla_data$no_specialists_nearctic_parasite_tree.tip.label[i])] <- remove_nearctic_phyla_data$trait[i]
-remove_nearctic_ouchdata <- as.data.frame(remove_nearctic_ouchdata)
-
-
-## Find the node that corresponds to the most recent common ancestor of all Acanthocephalans
-## which nodes in the ouchtree correspond to the Acanths
-remove_nearctic_ouchtree@nodelabels%in%remove_nearctic_phyla_data$no_specialists_nearctic_parasite_tree.tip.label[which(remove_nearctic_phyla_data$regime=="Acanthocephala")] %>% which -> acanths
-## get their lineages and find the nodes that are in common across all lineages
-remove_nearctic_ouchtree@lineages[acanths] -> acanth_lineages
-acanth_lineages[[1]][sapply(acanth_lineages[[1]], function(n) lapply(acanth_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 70
-
-## Find the node that corresponds to the most recent common ancestor of all Nematodes
-## which nodes in the ouchtree correspond to the Nematodes
-remove_nearctic_ouchtree@nodelabels%in%remove_nearctic_phyla_data$no_specialists_nearctic_parasite_tree.tip.label[which(remove_nearctic_phyla_data$regime=="Nematoda")] %>% which -> nematodes
-## get their lineages and find the nodes that are in common across all lineages
-remove_nearctic_ouchtree@lineages[nematodes] -> nematode_lineages
-nematode_lineages[[1]][sapply(nematode_lineages[[1]], function(n) lapply(nematode_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] #67
-
-## You can use the code above, replacing nearctic with remove_nearctic, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
-## paint the regimes onto the tree
-paint(remove_nearctic_ouchtree, subtree=c("1"="Platys","70"="Acanths","67"="Nematodes"), branch=c("1"="Platys")) -> remove_nearctic_oum_regimes
-paint(remove_nearctic_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> remove_nearctic_ou1_regimes
-## Plot it to make sure it looks good
-plot(remove_nearctic_ouchtree, regimes=remove_nearctic_oum_regimes)
-
-## Now do the fitting using ouch
-
-## OUM: AICc = 789.5, alpha = 910.52, sigma.sq = 4556845, Acanths = 196.5, Nematodes = 52.7, Platys = 114.9
-remove_nearctic_oum_ouch <- hansen(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree, regimes=remove_nearctic_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 806.3, alpha = 2.84, sigma.sq = 25860.6, global = 95.61
-remove_nearctic_ou1_ouch <- hansen(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree, regimes=remove_nearctic_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 811.4, sigma.sq = 14925
-remove_nearctic_bm_ouch <- brown(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree)
 
 ```
 
