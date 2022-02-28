@@ -221,31 +221,84 @@ gmpd_mam_mpd_no_specialists<-gmpd_mam_mpd_no_specialists[!is.na(gmpd_mam_mpd_no_
 
 #Visualizing MPD and Number of Hosts on Phylogenies
 ```{r visualizing_range_on_phylogenies, include =TRUE}
-
-#### NEARCTIC DATASET ####
+#colorblind friendly colorpalette
+library(scico)
+##### MPD ######
+#NEARCTIC DATASET
 
 #view mpd with single host species = 0 on the tree
-contMap(nearctic_parasite_tree, nearctic_para_mpd, fsize= .3, lwd=1, leg.text="x", type="fan") 
+# Count the number of unique character states in the observed data:
+n_cols <- n_distinct(nearctic_para_mpd)
+#make tree an object
+nearctic_mpd <- contMap(nearctic_parasite_tree, nearctic_para_mpd, plot = FALSE)
+
+# Change the color palette
+nearctic_mpd_color <- setMap(nearctic_mpd, scico(n_cols, palette = "bilbao"))
+
+# Plot the mapped characters with the new colors
+plot(
+  nearctic_mpd_color, 
+  type="fan", 
+  legend = 0.7*max(nodeHeights(nearctic_parasite_tree)),
+  leg.text="Neartic - MPD",
+  fsize = c(0.5, 0.7))
+
 
 #view mpd with single host species removed (no specialists) on the tree
 setdiff(nearctic_parasite_tree$tip.label, names(nearctic_para_mpd_no_specialists))->bye4
 no_specialists_nearctic_parasite_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(nearctic_parasite_tree$tip.label%in%bye4)])
 #plot(remove_nearctic_tree, cex=0.3)
 
-contMap(no_specialists_nearctic_parasite_tree, nearctic_para_mpd_no_specialists, fsize=.3, lwd=1) 
-#### GLOBAL DATASET ####
+nearctic_no_specialists_mpd <- contMap(no_specialists_nearctic_parasite_tree, nearctic_para_mpd_no_specialists, plot = FALSE)
+
+# Change the color palette
+nearctic_no_mpd_color <- setMap(nearctic_no_specialists_mpd, scico(n_cols, palette = "bilbao"))
+
+# Plot the mapped characters with the new colors
+plot(
+  nearctic_no_mpd_color, 
+  type="fan", 
+  legend = 0.7*max(nodeHeights(no_specialists_nearctic_parasite_tree)),
+  fsize = c(0.5, 0.7))
+
+#GMPD #
 
 #view mpd with single host species = 0 on the tree
-contMap(gmpd_parasite_tree, gmpd_para_mpd, fsize= .3,lwd=2, type="fan") 
+
+#make tree an object
+gmpd_mpd <- contMap(gmpd_parasite_tree, gmpd_para_mpd, plot = FALSE)
+
+# Change the color palette
+gmpd_mpd_color <- setMap(gmpd_mpd , scico(n_cols, palette = "bilbao"))
+
+# Plot the mapped characters with the new colors
+plot(
+  gmpd_mpd_color, 
+  type="fan", 
+  legend = 0.7*max(nodeHeights(gmpd_parasite_tree)),
+  fsize = c(0.5, 0.7))
+
 
 #view mpd with single host species removed on the tree
 setdiff(gmpd_parasite_tree$tip.label, names(gmpd_para_mpd_no_specialists))->bye5
 no_specialists_gmpd_parasite_tree<-drop.tip(gmpd_parasite_tree, gmpd_parasite_tree$tip.label[which(gmpd_parasite_tree$tip.label%in%bye5)])
 #plot(remove_global_tree, cex=0.3)
 
-contMap(no_specialists_gmpd_parasite_tree, gmpd_para_mpd_no_specialists, fsize=.3, lwd=2, type="fan") 
+#make tree an object
+gmpd_no_specialists_mpd <- contMap(no_specialists_gmpd_parasite_tree, gmpd_para_mpd_no_specialists, plot = FALSE)
 
-#### NEARCTIC DATASET ####
+# Change the color palette
+gmpd_no_mpd_color <- setMap(gmpd_no_specialists_mpd, scico(n_cols, palette = "bilbao"))
+
+# Plot the mapped characters with the new colors
+plot(
+  gmpd_no_mpd_color, 
+  type="fan", 
+  legend = 0.7*max(nodeHeights(no_specialists_gmpd_parasite_tree)),
+  fsize = c(0.5, 0.7))
+
+##### No. of hosts #####
+# NEARCTIC DATASET #
 
 ## Count how many unique hosts each parasite has and put the data frame in the same order as tree tip labels
 nearctic_para_nhosts <- nearctic_abund_data[match(nearctic_parasite_tree$tip.label, nearctic_abund_data$Parasite),"Freq"]
@@ -253,22 +306,29 @@ names(nearctic_para_nhosts) <- nearctic_abund_data[match(nearctic_parasite_tree$
 ## Remove all the parasites with a single host
 nearctic_para_nhosts_no_specialists <- nearctic_para_nhosts[!nearctic_para_nhosts==1]
 
-#### GMPD DATASET ####
+#check nearctic nhost tree
+#contMap(nearctic_parasite_tree, nearctic_para_nhosts, fsize=.3, type = "fan")
+
+#check gmpd nhost tree without specialists
+#contMap(no_specialists_nearctic_parasite_tree, nearctic_para_nhosts_no_specialists, fsize=.3)
+
+
+# GMPD #
 gmpd_para_nhosts <- sapply(names(gmpd_para_mpd), function(n) length(unique(gmpd_data$HostCorrectedName[gmpd_data$ParasiteCorrectedName==n])))
 names(gmpd_para_nhosts) <- names(gmpd_para_mpd)
 #remove single host species
 gmpd_para_nhosts_no_specialists <- gmpd_para_nhosts[!gmpd_para_nhosts==1]
 
-#check
-contMap(gmpd_parasite_tree, gmpd_para_nhosts, fsize=.3, type = "fan")
+#check gmpd nhost tree
+#contMap(gmpd_parasite_tree, gmpd_para_nhosts, fsize=.3, type = "fan")
 
-
-#check
-contMap(no_specialists_gmpd_parasite_tree, gmpd_para_nhosts_no_specialists, fsize=.3, type ="fan")
+#check gmpd nhost tree without specialists
+#contMap(no_specialists_gmpd_parasite_tree, gmpd_para_nhosts_no_specialists, fsize=.3, type ="fan")
 
 ```
 
 
+#Check for Sampling Bias
 ```{r sampling_bias_correction}
 ## Run four models:
 ## 1. gls using citations to predict range (either MPD or number of hosts);
