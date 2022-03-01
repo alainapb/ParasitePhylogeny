@@ -21,6 +21,9 @@ library(pmc)
 library(corHMM)
 library(OUwie)
 library(rentrez)
+library(ggrepel)
+library(patchwork)
+library(scico)
 ```
 
 #Load data
@@ -44,8 +47,6 @@ nearctic_abund_data<-read.csv("Host_Range_Nearctic_Mammals.csv")
 
 #change to characters instead of factors
 nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
-
-
 ```
 
 #Accounting for research effort using the rentrez package searching Pubmed
@@ -221,8 +222,8 @@ gmpd_mam_mpd_no_specialists<-gmpd_mam_mpd_no_specialists[!is.na(gmpd_mam_mpd_no_
 
 #Visualizing MPD and Number of Hosts on Phylogenies
 ```{r visualizing_range_on_phylogenies, include =TRUE}
-#colorblind friendly colorpalette
-library(scico)
+#colorblind friendly colorpalette scico
+
 ##### MPD ######
 #NEARCTIC DATASET
 
@@ -241,7 +242,8 @@ plot(
   type="fan", 
   legend = 0.7*max(nodeHeights(nearctic_parasite_tree)),
   leg.text="Neartic - MPD",
-  fsize = c(0.5, 0.7))
+  fsize = c(0.7, 0.9))
+title("MPD - Nearctic Dataset")
 
 
 #view mpd with single host species removed (no specialists) on the tree
@@ -259,7 +261,8 @@ plot(
   nearctic_no_mpd_color, 
   type="fan", 
   legend = 0.7*max(nodeHeights(no_specialists_nearctic_parasite_tree)),
-  fsize = c(0.5, 0.7))
+  fsize = c(0.7, 0.9))
+title("MPD (no specialists) - Nearctic Dataset")
 
 #GMPD #
 
@@ -276,7 +279,8 @@ plot(
   gmpd_mpd_color, 
   type="fan", 
   legend = 0.7*max(nodeHeights(gmpd_parasite_tree)),
-  fsize = c(0.5, 0.7))
+  fsize = c(0.4, 0.5))
+#title("MPD - GMPD")
 
 
 #view mpd with single host species removed on the tree
@@ -1565,11 +1569,13 @@ dat<-data.frame(taxa=nearctic_parasite_tree$tip.label,
                 env=as.factor(nearctic_transmission$nonclose),
                 intermediate=as.factor(nearctic_transmission$intermediate))
 
+## Removing node labels:
+nearctic_parasite_tree$node.label<-NULL
 cdat<-comparative.data(data=dat, phy=nearctic_parasite_tree, names.col = "taxa")
 
-summary(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .363))
-anova(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .363))
-plot(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .363))
+summary(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = "ML"))
+anova(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = "ML"))
+plot(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = "ML"))
 
 #### Dataset that includes parasite traits (length), subsets to 33 species ####
 #create pgls data from nearctic_para_mpd
@@ -1594,6 +1600,8 @@ nearctic_dat<-data.frame(taxa=nearctic_pgls$tip.label,
                 intermediate=as.factor(nearctic_trans$intermediate),
                 host_mass=nearctic_traits$avgMass)
 
+## Removing node labels:
+nearctic_pgls$node.label<-NULL
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
 nearctic_cdat<-comparative.data(data=nearctic_dat, phy=nearctic_pgls, names.col = "taxa")
 print(nearctic_cdat)
@@ -1601,7 +1609,7 @@ print(nearctic_cdat)
 ## model testing ##
 
 #all predictors
-nearctic_mod <- pgls(para.mpd ~ log.pubs + close + nonclose + intermediate + para.l + host_mass, nearctic_cdat, lambda = .363)
+nearctic_mod <- pgls(para.mpd ~ log.pubs + close + nonclose + intermediate + para.l + host_mass, nearctic_cdat, lambda = "ML")
 summary(nearctic_mod)
 anova(nearctic_mod)
 
@@ -1713,7 +1721,7 @@ plot(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .615)
 pgls_gmpd_para_mpd<-gmpd_para_mpd[match(gmpd_pgls$tip.label, names(gmpd_para_mpd))]
 
 #create pgls data for research effort
-pgls_gmpd_para_pubs<-corrected$pubs[match(gmpd_pgls$tip.label, corrected$term)]
+pgls_gmpd_para_pubs<-gmpd_para_pubs$pubs[match(gmpd_pgls$tip.label, gmpd_para_pubs$term)]
 
 #create pgls data for sum of host publications per parasite
 pgls_gmpd_host_pubs<-gmpd_host_sums[match(gmpd_pgls$tip.label, names(gmpd_host_sums))]
@@ -1831,13 +1839,13 @@ contMap(gmpd_mammal_tree, gmpd_mam_mpd, fsize=0.3, lwd =1, type ="fan")
 #### Calulate pairwise distance (PD) of each mammal to homo sapiens ####
 
 #subset PHYLACINE mammal tree to include GMPD mammals
-setdiff(large_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->group2
+setdiff(gmpd_mammal_tree$tip.label, gmpd_data$HostCorrectedName)->group2
 
 #add back the humans
 group3 <- group2[group2 != "Homo sapiens"]
 
 #subset the tree
-mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%group3)])
+mammal_tree<-drop.tip(gmpd_mammal_tree, gmpd_mammal_tree$tip.label[which(gmpd_mammal_tree$tip.label%in%group3)])
 
 #calculate the pairwise distances
 mam_dis<-cophenetic.phylo(mammal_tree)
