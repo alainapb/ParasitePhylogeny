@@ -3,11 +3,12 @@ title: "Helminth_MS_9_15_20"
 author: "APB"
 date: "9/15/2020"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,
-                      dev=c('png','tiff'),
+knitr::opts_chunk$set(dev=c('png','tiff'),
                       fig.path='figures/')
 
 library(ape)
@@ -38,14 +39,11 @@ gmpd_parasite_data <- read.csv("GMPD_parasite_traits.csv")
 ```
 
 ```{r load_nearctic_data, include = FALSE}
-
 #parasite abundance/occurence data
 nearctic_abund_data<-read.csv("Host_Range_Nearctic_Mammals.csv")
 
 #change to characters instead of factors
 nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
-
-
 ```
 
 #Accounting for research effort using the rentrez package searching Pubmed
@@ -119,7 +117,7 @@ saveRDS(nearctic_para_pubs, "Nearctic_para_pubs.RDS")
 
 ```
 
-```{r}
+```{r load_research_effort_data, include = FALSE}
 gmpd_host_pubs <- readRDS("GMPD_host_pubs.RDS")
 gmpd_para_pubs <- readRDS("GMPD_para_pubs.RDS")
 nearctic_host_pubs <- readRDS("Nearctic_host_pubs.RDS")
@@ -265,7 +263,7 @@ contMap(no_specialists_gmpd_parasite_tree, gmpd_para_nhosts_no_specialists, fsiz
 ```
 
 
-```{r sampling_bias_correction}
+```{r sampling_bias_correction, include=TRUE}
 ## Run four models:
 ## 1. gls using citations to predict range (either MPD or number of hosts);
 ## 2. gls using the tree to predict range;
@@ -307,95 +305,127 @@ anova(gls_host_pubs_mpd_gmpd, gls_host_pubs_tree_mpd_gmpd)
 
 ## Repeat analysis, but without specialists
 gls_null_mpd_gmpd_no_spec <- gls(mpd~1, data=subset(gmpd_para_pubs, mpd>0))
-gls_pubs_mpd_gmpd_no_spec <- gls(mpd~pubs, data=subset(gmpd_para_pubs, mpd>0))
+gls_para_pubs_mpd_gmpd_no_spec <- gls(mpd~pubs, data=subset(gmpd_para_pubs, mpd>0))
+gls_host_pubs_mpd_gmpd_no_spec <- gls(mpd~hostPubSum, data=subset(gmpd_para_pubs, mpd>0))
 gls_tree_mpd_gmpd_no_spec <- gls(mpd~1, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
-gls_pubs_tree_mpd_gmpd_no_spec <- gls(mpd~pubs, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
+gls_para_pubs_tree_mpd_gmpd_no_spec <- gls(mpd~pubs, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
+gls_host_pubs_tree_mpd_gmpd_no_spec <- gls(mpd~hostPubSum, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
 ## Strong evidence there is phylogenetic signal, as the tree-only model drastically outperforms the null model
 anova(gls_tree_mpd_gmpd_no_spec, gls_null_mpd_gmpd_no_spec)
-## No real evidence for sampling bias
-anova(gls_tree_mpd_gmpd_no_spec, gls_pubs_tree_mpd_gmpd_no_spec)
+## No real evidence for sampling bias; slight evidence for sampling bias in host publications (p = 0.04)
+anova(gls_tree_mpd_gmpd_no_spec, gls_para_pubs_tree_mpd_gmpd_no_spec)
+anova(gls_tree_mpd_gmpd_no_spec, gls_host_pubs_tree_mpd_gmpd_no_spec)
 ## Strong evidence phylogenetic signal persists after accounting for the sampling bias
-anova(gls_pubs_mpd_gmpd_no_spec, gls_pubs_tree_mpd_gmpd_no_spec)
+anova(gls_para_pubs_mpd_gmpd_no_spec, gls_para_pubs_tree_mpd_gmpd_no_spec)
+anova(gls_host_pubs_mpd_gmpd_no_spec, gls_host_pubs_tree_mpd_gmpd_no_spec)
 
 ## Analysis of range as number of hosts
 ## All parasites
 gls_null_nhosts_gmpd <- gls(nhosts~1, data=gmpd_para_pubs)
-gls_pubs_nhosts_gmpd <- gls(nhosts~pubs, data=gmpd_para_pubs)
+gls_para_pubs_nhosts_gmpd <- gls(nhosts~pubs, data=gmpd_para_pubs)
+gls_host_pubs_nhosts_gmpd <- gls(nhosts~hostPubSum, data=gmpd_para_pubs)
 gls_tree_nhosts_gmpd <- gls(nhosts~1, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
-gls_pubs_tree_nhosts_gmpd <- gls(nhosts~pubs, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
+gls_para_pubs_tree_nhosts_gmpd <- gls(nhosts~pubs, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
+gls_host_pubs_tree_nhosts_gmpd <- gls(nhosts~hostPubSum, data=gmpd_para_pubs, correlation=corPagel(0.5, gmpd_parasite_tree))
 ## Evidence for phylogenetic signal, as the tree-only model outperforms the null model (p = 0.0136)
 anova(gls_null_nhosts_gmpd, gls_tree_nhosts_gmpd)
 ## But also evidence for sampling bias
-anova(gls_tree_nhosts_gmpd, gls_pubs_tree_nhosts_gmpd)
-## Evidence that tree + pubs is much better than tree only (p = 0.0342)
-anova(gls_pubs_nhosts_gmpd, gls_pubs_tree_nhosts_gmpd)
+anova(gls_tree_nhosts_gmpd, gls_para_pubs_tree_nhosts_gmpd)
+anova(gls_tree_nhosts_gmpd, gls_host_pubs_tree_nhosts_gmpd)
+## Evidence that tree + pubs is much better than tree only (p = 0.0342, 0.0103; para pubs and host pubs respectively)
+anova(gls_para_pubs_nhosts_gmpd, gls_para_pubs_tree_nhosts_gmpd)
+anova(gls_host_pubs_nhosts_gmpd, gls_host_pubs_tree_nhosts_gmpd)
 
 ## Repeat analysis, but without specialists
 gls_null_nhosts_gmpd_no_spec <- gls(nhosts~1, data=subset(gmpd_para_pubs, mpd>0))
-gls_pubs_nhosts_gmpd_no_spec <- gls(nhosts~pubs, data=subset(gmpd_para_pubs, mpd>0))
+gls_para_pubs_nhosts_gmpd_no_spec <- gls(nhosts~pubs, data=subset(gmpd_para_pubs, mpd>0))
+gls_host_pubs_nhosts_gmpd_no_spec <- gls(nhosts~hostPubSum, data=subset(gmpd_para_pubs, mpd>0))
 gls_tree_nhosts_gmpd_no_spec <- gls(nhosts~1, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree))
-gls_pubs_tree_nhosts_gmpd_no_spec <- gls(nhosts~pubs, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree)) 
+gls_para_pubs_tree_nhosts_gmpd_no_spec <- gls(nhosts~pubs, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree)) 
+gls_host_pubs_tree_nhosts_gmpd_no_spec <- gls(nhosts~hostPubSum, data=subset(gmpd_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_gmpd_parasite_tree)) 
 ## Evidence for phylogenetic signal, as the tree-only model outperforms the null model (p = 0.0231)
 anova(gls_null_nhosts_gmpd_no_spec, gls_tree_nhosts_gmpd_no_spec)
-## But also evidence for sampling bias
-anova(gls_tree_nhosts_gmpd_no_spec, gls_pubs_tree_nhosts_gmpd_no_spec)
-## Weak evidence for phylogenetic signal after accounting for sampling bias (p = 0.0495)
-anova(gls_pubs_nhosts_gmpd_no_spec, gls_pubs_tree_nhosts_gmpd_no_spec)
+## But also evidence for sampling bias in host publications ( p < 0.001)
+anova(gls_tree_nhosts_gmpd_no_spec, gls_para_pubs_tree_nhosts_gmpd_no_spec)
+anova(gls_tree_nhosts_gmpd_no_spec, gls_host_pubs_tree_nhosts_gmpd_no_spec)
+## Weak evidence for phylogenetic signal after accounting for sampling bias (p = 0.0495 parasite pubs; 0.002 for host pubs)
+anova(gls_para_pubs_nhosts_gmpd_no_spec, gls_para_pubs_tree_nhosts_gmpd_no_spec)
+anova(gls_host_pubs_nhosts_gmpd_no_spec, gls_host_pubs_tree_nhosts_gmpd_no_spec)
 
 
 ## Nearctic database ##
 nearctic_para_pubs$mpd <- unname(nearctic_para_mpd)
 nearctic_para_pubs$nhosts <- unname(nearctic_para_nhosts)
+## Compute the total number of publications summed across all hosts of each parasite
+nearctic_para_pubs$hostPubSum <- sapply(nearctic_para_pubs$term, function(n)
+  sum(nearctic_host_pubs$pubs[nearctic_host_pubs$term%in%(unique(nearctic_data$Host[nearctic_data$Parasite==n]))]))
+
 
 ## Analysis of range as mean pairwise distance
 ## All parasites
 gls_null_mpd_nearctic <- gls(mpd~1, data=nearctic_para_pubs)
-gls_pubs_mpd_nearctic <- gls(mpd~pubs, data=nearctic_para_pubs)
+gls_para_pubs_mpd_nearctic <- gls(mpd~pubs, data=nearctic_para_pubs)
+gls_host_pubs_mpd_nearctic <- gls(mpd~hostPubSum, data=nearctic_para_pubs)
 gls_tree_mpd_nearctic <- gls(mpd~1, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
-gls_pubs_tree_mpd_nearctic <- gls(mpd~pubs, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
+gls_para_pubs_tree_mpd_nearctic <- gls(mpd~pubs, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
+gls_host_pubs_tree_mpd_nearctic <- gls(mpd~hostPubSum, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
 ## Strong evidence for phylogenetic signal in MPD, as the tree-only model drastically outperforms the null model
 anova(gls_null_mpd_nearctic, gls_tree_mpd_nearctic)
 ## No evidence for sampling bias
-anova(gls_tree_mpd_nearctic, gls_pubs_tree_mpd_nearctic)
+anova(gls_tree_mpd_nearctic, gls_para_pubs_tree_mpd_nearctic)
+anova(gls_tree_mpd_nearctic, gls_host_pubs_tree_mpd_nearctic)
 ## Strong evidence for phylogenetic signal in MPD, as the tree+pubs model drastically outperforms the pubs-only model
-anova(gls_pubs_mpd_nearctic, gls_pubs_tree_mpd_nearctic)
+anova(gls_para_pubs_mpd_nearctic, gls_para_pubs_tree_mpd_nearctic)
+anova(gls_host_pubs_mpd_nearctic, gls_host_pubs_tree_mpd_nearctic)
 
 ## Repeat analysis, but without specialists
 gls_null_mpd_nearctic_no_spec <- gls(mpd~1, data=subset(nearctic_para_pubs, mpd>0))
-gls_pubs_mpd_nearctic_no_spec <- gls(mpd~pubs, data=subset(nearctic_para_pubs, mpd>0))
+gls_para_pubs_mpd_nearctic_no_spec <- gls(mpd~pubs, data=subset(nearctic_para_pubs, mpd>0))
+gls_host_pubs_mpd_nearctic_no_spec <- gls(mpd~hostPubSum, data=subset(nearctic_para_pubs, mpd>0))
 gls_tree_mpd_nearctic_no_spec <- gls(mpd~1, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree))
-gls_pubs_tree_mpd_nearctic_no_spec <- gls(mpd~pubs, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree))
+gls_para_pubs_tree_mpd_nearctic_no_spec <- gls(mpd~pubs, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree))
+gls_host_pubs_tree_mpd_nearctic_no_spec <- gls(mpd~hostPubSum, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree))
 ## Strong evidence for phylogenetic signal in MPD, as the tree-only model drastically outperforms the null model
 anova(gls_null_mpd_nearctic_no_spec, gls_tree_mpd_nearctic_no_spec)
 ## No evidence for sampling bias
-anova(gls_tree_mpd_nearctic_no_spec, gls_pubs_tree_mpd_nearctic_no_spec)
+anova(gls_tree_mpd_nearctic_no_spec, gls_para_pubs_tree_mpd_nearctic_no_spec)
+anova(gls_tree_mpd_nearctic_no_spec, gls_host_pubs_tree_mpd_nearctic_no_spec)
 ## Strong evidence for phylogenetic signal in MPD, as the tree+pubs model drastically outperforms the pubs-only model
-anova(gls_pubs_mpd_nearctic_no_spec, gls_pubs_tree_mpd_nearctic_no_spec)
+anova(gls_para_pubs_mpd_nearctic_no_spec, gls_para_pubs_tree_mpd_nearctic_no_spec)
+anova(gls_host_pubs_mpd_nearctic_no_spec, gls_host_pubs_tree_mpd_nearctic_no_spec)
 
 ## Analysis of range as number of hosts
 ## All parasites
 gls_null_nhosts_nearctic <- gls(nhosts~1, data=nearctic_para_pubs)
-gls_pubs_nhosts_nearctic <- gls(nhosts~pubs, data=nearctic_para_pubs)
+gls_para_pubs_nhosts_nearctic <- gls(nhosts~pubs, data=nearctic_para_pubs)
+gls_host_pubs_nhosts_nearctic <- gls(nhosts~hostPubSum, data=nearctic_para_pubs)
 gls_tree_nhosts_nearctic <- gls(nhosts~1, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
-gls_pubs_tree_nhosts_nearctic <- gls(nhosts~pubs, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
+gls_para_pubs_tree_nhosts_nearctic <- gls(nhosts~pubs, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
+gls_host_pubs_tree_nhosts_nearctic <- gls(nhosts~hostPubSum, data=nearctic_para_pubs, correlation=corPagel(0.5, nearctic_parasite_tree))
 ## No evidence for phylogenetic signal in number of hosts, as tree-only does not outperform the null model
 anova(gls_tree_nhosts_nearctic, gls_null_nhosts_nearctic)
-## No evidence for sampling bias
-anova(gls_tree_nhosts_nearctic, gls_pubs_tree_nhosts_nearctic)
+## No evidence for sampling bias when using parasite pubs, evidence of sampling bias using host pubs
+anova(gls_tree_nhosts_nearctic, gls_para_pubs_tree_nhosts_nearctic)
+anova(gls_tree_nhosts_nearctic, gls_host_pubs_tree_nhosts_nearctic)
 ## No evidence for phylogenetic signal here either, as tree+pubs does not outperform a pubs-only model
-anova(gls_pubs_nhosts_nearctic, gls_pubs_tree_nhosts_nearctic)
+anova(gls_para_pubs_nhosts_nearctic, gls_para_pubs_tree_nhosts_nearctic)
+anova(gls_host_pubs_nhosts_nearctic, gls_host_pubs_tree_nhosts_nearctic) #when using host pubs there is evidence for phylogenetic signal
 
 ## Repeat analysis, but without specialists
 gls_null_nhosts_nearctic_no_spec <- gls(nhosts~1, data=subset(nearctic_para_pubs, mpd>0))
-gls_pubs_nhosts_nearctic_no_spec <- gls(nhosts~pubs, data=subset(nearctic_para_pubs, mpd>0))
+gls_para_pubs_nhosts_nearctic_no_spec <- gls(nhosts~pubs, data=subset(nearctic_para_pubs, mpd>0))
+gls_host_pubs_nhosts_nearctic_no_spec <- gls(nhosts~hostPubSum, data=subset(nearctic_para_pubs, mpd>0))
 gls_tree_nhosts_nearctic_no_spec <- gls(nhosts~1, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree))
-gls_pubs_tree_nhosts_nearctic_no_spec <- gls(nhosts~pubs, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree)) 
+gls_para_pubs_tree_nhosts_nearctic_no_spec <- gls(nhosts~pubs, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree)) 
+gls_host_pubs_tree_nhosts_nearctic_no_spec <- gls(nhosts~hostPubSum, data=subset(nearctic_para_pubs, mpd>0), correlation=corPagel(0.5, no_specialists_nearctic_parasite_tree)) 
 ## No evidence for phylogenetic signal in number of hosts, as tree-only does not outperform the null model
 anova(gls_tree_nhosts_nearctic_no_spec, gls_null_nhosts_nearctic_no_spec)
-## No evidence for sampling bias
-anova(gls_tree_nhosts_nearctic_no_spec, gls_pubs_tree_nhosts_nearctic_no_spec)
-## No evidence for phylogenetic signal here either, as tree+pubs does not outperform a pubs-only model
-anova(gls_pubs_nhosts_nearctic_no_spec, gls_pubs_tree_nhosts_nearctic_no_spec)
+## No evidence for sampling bias when using parasite publications, evidence of sampling bias when using host publications (p < 0.0001)
+anova(gls_tree_nhosts_nearctic_no_spec, gls_para_pubs_tree_nhosts_nearctic_no_spec)
+anova(gls_tree_nhosts_nearctic_no_spec, gls_host_pubs_tree_nhosts_nearctic_no_spec)
+## No evidence for phylogenetic signal here either, as tree+pubs does not outperform a pubs-only model (in para pubs)
+anova(gls_para_pubs_nhosts_nearctic_no_spec, gls_para_pubs_tree_nhosts_nearctic_no_spec)
+anova(gls_host_pubs_nhosts_nearctic_no_spec, gls_host_pubs_tree_nhosts_nearctic_no_spec) # p = 0.016 pubs + tree is better
 
 ```
 
@@ -1377,18 +1407,18 @@ write.csv(b.size, "bodysizepara.csv")
 
 ##nearctic mpd, single host = 0 
 setdiff(nearctic_parasite_tree$tip.label, b.size$Parasite.species)->no_body_size 
-nearctic_pgls <- drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(nearctic_parasite_tree$tip.label%in%no_body_size)])
+nearctic_pgls <- drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(nearctic_parasite_tree$tip.label%in%no_body_size)]) #33 taxa
 
 # make sure body size is in the same order as the parasite phylogeny
-nearctic.b.size <- b.size[match(nearctic_pgls$tip.label, b.size$Parasite.species),]
+nearctic_b_size <- b.size[match(nearctic_pgls$tip.label, b.size$Parasite.species),]
 
 
 ##nearctic mpd, single host removed 
 setdiff(no_specialists_nearctic_parasite_tree$tip.label, b.size$Parasite.species)->no_body_size1 
-remove_nearctic_pgls <- drop.tip(no_specialists_nearctic_parasite_tree, no_specialists_nearctic_parasite_tree$tip.label[which(no_specialists_nearctic_parasite_tree$tip.label%in%no_body_size1)])
+nearctic_pgls_no_spec <- drop.tip(no_specialists_nearctic_parasite_tree, no_specialists_nearctic_parasite_tree$tip.label[which(no_specialists_nearctic_parasite_tree$tip.label%in%no_body_size1)])
 
 # make sure body size is in the same order as the parasite phylogeny
-remove.nearctic.b.size <- b.size[match(remove_nearctic_pgls$tip.label, b.size$Parasite.species),]
+nearctic_b_size_no_spec <- b.size[match(nearctic_pgls_no_spec$tip.label, b.size$Parasite.species),]
 
 
 ##global mpd, single host = 0 
@@ -1396,14 +1426,14 @@ setdiff(gmpd_parasite_tree$tip.label, b.size$Parasite.species)->no_body_size2
 gmpd_pgls <- drop.tip(gmpd_parasite_tree, gmpd_parasite_tree$tip.label[which(gmpd_parasite_tree$tip.label%in%no_body_size2)])
 
 # make sure body size is in the same order as the parasite phylogeny
-gmpd.b.size <- b.size[match(gmpd_pgls$tip.label, b.size$Parasite.species),]
+gmpd_b_size <- b.size[match(gmpd_pgls$tip.label, b.size$Parasite.species),]
 
 ##global mpd, single host removed
 setdiff(no_specialists_gmpd_parasite_tree$tip.label, b.size$Parasite.species)->no_body_size3 
-remove_gmpd_pgls <- drop.tip(no_specialists_gmpd_parasite_tree, no_specialists_gmpd_parasite_tree$tip.label[which(no_specialists_gmpd_parasite_tree$tip.label%in%no_body_size3)])
+gmpd_pgls_no_spec <- drop.tip(no_specialists_gmpd_parasite_tree, no_specialists_gmpd_parasite_tree$tip.label[which(no_specialists_gmpd_parasite_tree$tip.label%in%no_body_size3)])
 
 # make sure body size is in the same order as the parasite phylogeny
-remove.gmpd.b.size <- b.size[match(remove_gmpd_pgls$tip.label, b.size$Parasite.species),]
+gmpd_b_size_no_spec <- b.size[match(no_specialists_gmpd_parasite_tree$tip.label, b.size$Parasite.species),]
 
 
 
@@ -1441,10 +1471,10 @@ nearctic_traits <- nearctic_traits[match(nearctic_pgls$tip.label, nearctic_trait
 
 
 #nearctic with single hosts removed
-setdiff(Host_mass$Parasite, remove_nearctic_pgls$tip.label)-> getout1
-remove_nearctic_traits<-Host_mass[-which(Host_mass$Parasite %in% getout1),]
+setdiff(Host_mass$Parasite, nearctic_pgls_no_spec$tip.label)-> getout1
+nearctic_traits_no_spec<-Host_mass[-which(Host_mass$Parasite %in% getout1),]
 #put in tree tip label order
-remove_nearctic_traits <- remove_nearctic_traits[match(remove_nearctic_pgls$tip.label, remove_nearctic_traits$Parasite),]
+nearctic_traits_no_spec <- nearctic_traits_no_spec[match(nearctic_pgls_no_spec$tip.label, nearctic_traits_no_spec$Parasite),]
 
 
 #gmpd with single hosts = 0
@@ -1454,10 +1484,10 @@ gmpd_traits <- gmpd_traits[match(gmpd_pgls$tip.label, gmpd_traits$Parasite),]
 
 
 #gmpd with single hosts removed
-setdiff(Host_mass$Parasite, remove_gmpd_pgls$tip.label)-> getout2
-remove_gmpd_traits<-Host_mass[-which(Host_mass$Parasite %in% getout2),]
+setdiff(Host_mass$Parasite, gmpd_pgls_no_spec$tip.label)-> getout2
+gmpd_traits_no_spec<-Host_mass[-which(Host_mass$Parasite %in% getout2),]
 #put in tree tip label order
-remove_gmpd_traits <- remove_gmpd_traits[match(remove_gmpd_pgls$tip.label, remove_gmpd_traits$Parasite),]
+gmpd_traits_no_spec <- gmpd_traits_no_spec[match(gmpd_pgls_no_spec$tip.label, gmpd_traits_no_spec$Parasite),]
 
 
 #### clean parasite transmission data ####
@@ -1467,8 +1497,8 @@ nearctic_trans<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% nea
 nearctic_trans<-nearctic_trans[match(nearctic_pgls$tip.label, nearctic_trans$CorrectName),]
 
 #neartic with single species removed
-remove_nearctic_trans<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% remove_nearctic_pgls$tip.label),]
-remove_nearctic_trans<-remove_nearctic_trans[match(remove_nearctic_pgls$tip.label, remove_nearctic_trans$CorrectName),]
+nearctic_trans_no_spec<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% nearctic_pgls_no_spec$tip.label),]
+nearctic_trans_no_spec<-nearctic_trans_no_spec[match(nearctic_pgls_no_spec$tip.label, nearctic_trans_no_spec$CorrectName),]
 
 
 #gmpd with single hosts = 0
@@ -1476,8 +1506,8 @@ gmpd_trans<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% gmpd_pg
 gmpd_trans<-gmpd_trans[match(gmpd_pgls$tip.label, gmpd_trans$CorrectName),]
 
 #gmpd with single species removed
-remove_gmpd_trans<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% remove_gmpd_pgls$tip.label),]
-remove_gmpd_trans<-remove_gmpd_trans[match(remove_gmpd_pgls$tip.label, remove_gmpd_trans$CorrectName),]
+gmpd_trans_no_spec<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% gmpd_pgls_no_spec$tip.label),]
+gmpd_trans_no_spec<-gmpd_trans_no_spec[match(gmpd_pgls_no_spec$tip.label, gmpd_trans_no_spec$CorrectName),]
 
 ```
 
@@ -1488,16 +1518,6 @@ remove_gmpd_trans<-remove_gmpd_trans[match(remove_gmpd_pgls$tip.label, remove_gm
 
 ##with single host species MPD = 0
 
-#calculate a sum of host publications for each parasite 
-nearctic_host_sums<-vector("numeric", length=nrow(nearctic_df))
-for (p.index in 1:nrow (nearctic_df)) {
-  host.index <- unlist(nearctic_df[p.index,])
-  host.names <- names(host.index)[which(host.index > 0)]
-  nearctic_host_sums[p.index] <- sum(nearctic_host_pubs[nearctic_host_pubs$term%in%host.names,"pubs"])
-}
-#add parasite names to each sum of host publications
-names(nearctic_host_sums)<-nearctic_para_list
-
 # prepare transmission data
 nearctic_transmission<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% nearctic_parasite_tree$tip.label),]
 nearctic_transmission<-nearctic_transmission[match(nearctic_parasite_tree$tip.label, nearctic_transmission$CorrectName),]
@@ -1505,51 +1525,56 @@ nearctic_transmission<-nearctic_transmission[match(nearctic_parasite_tree$tip.la
 #### All species ####
 
 dat<-data.frame(taxa=nearctic_parasite_tree$tip.label,
-                para.mpd=nearctic_para_mpd,              #mpd
-                log.pubs=log(nearctic_para_pubs$pubs + nearctic_host_sums), #research bias log(total no. of hits pubmed)
+                para.mpd=nearctic_para_pubs$mpd,              #mpd
+                para_pubs=log(nearctic_para_pubs$pubs),
+                host_pubs=log(nearctic_para_pubs$hostPubSum),
                 close=as.factor(nearctic_transmission$close),
                 env=as.factor(nearctic_transmission$nonclose),
                 intermediate=as.factor(nearctic_transmission$intermediate))
 
+nearctic_parasite_tree$node.label<-NULL
 cdat<-comparative.data(data=dat, phy=nearctic_parasite_tree, names.col = "taxa")
 
-summary(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .363))
-anova(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .363))
-plot(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .363))
+summary(pgls(para.mpd ~ para_pubs + close + env + intermediate, cdat, lambda = "ML"))
+anova(pgls(para.mpd ~ para_pubs + close + env + intermediate, cdat, lambda = "ML"))
+plot(pgls(para.mpd ~ para_pubs + close + env + intermediate, cdat, lambda = "ML"))
+
+summary(pgls(para.mpd ~ host_pubs + close + env + intermediate, cdat, lambda = "ML"))
+anova(pgls(para.mpd ~ host_pubs + close + env + intermediate, cdat, lambda = "ML"))
+plot(pgls(para.mpd ~ host_pubs + close + env + intermediate, cdat, lambda = "ML"))
 
 #### Dataset that includes parasite traits (length), subsets to 33 species ####
 #create pgls data from nearctic_para_mpd
-pgls_nearctic_para_mpd<-nearctic_para_mpd[match(nearctic_pgls$tip.label, names(nearctic_para_mpd))]
-
-#create pgls data for research effort
-pgls_nearctic_para_pubs<-nearctic_para_pubs$pubs[match(nearctic_pgls$tip.label, nearctic_para_pubs$term)]
-
-#create pgls data for sum of host publications per parasite
-pgls_nearctic_host_pubs<-nearctic_host_sums[match(nearctic_pgls$tip.label, names(nearctic_host_sums))]
-
+pgls_nearctic_para_mpd<-nearctic_para_pubs[match(nearctic_pgls$tip.label, nearctic_para_pubs$term),]
 
 #create pgls dataset 
 nearctic_dat<-data.frame(taxa=nearctic_pgls$tip.label,
-                para.mpd=pgls_nearctic_para_mpd,              #mpd
-                log.pubs=log(pgls_nearctic_para_pubs +pgls_nearctic_host_pubs),
-                para.l=nearctic.b.size$mean_l,                #parasite length
-                para.w=nearctic.b.size$mean_w,                #parasite width
-                para.b=nearctic.b.size$ratio,                 #parasite l/w ratio
+                para.mpd=pgls_nearctic_para_mpd$mpd,              #mpd
+                para.pubs=log(pgls_nearctic_para_mpd$pubs),
+                host.pubs=log(pgls_nearctic_para_mpd$hostPubSum),
+                para.l=nearctic_b_size$mean_l,                #parasite length
+                para.w=nearctic_b_size$mean_w,                #parasite width
+                para.b=nearctic_b_size$ratio,                 #parasite l/w ratio
                 close=as.factor(nearctic_trans$close),
                 nonclose=as.factor(nearctic_trans$nonclose),
                 intermediate=as.factor(nearctic_trans$intermediate),
                 host_mass=nearctic_traits$avgMass)
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
+nearctic_pgls$node.label<-NULL
 nearctic_cdat<-comparative.data(data=nearctic_dat, phy=nearctic_pgls, names.col = "taxa")
 print(nearctic_cdat)
 
 ## model testing ##
 
 #all predictors
-nearctic_mod <- pgls(para.mpd ~ log.pubs + close + nonclose + intermediate + para.l + host_mass, nearctic_cdat, lambda = .363)
-summary(nearctic_mod)
-anova(nearctic_mod)
+nearctic_para_mod <- pgls(para.mpd ~ para.pubs + close + nonclose + intermediate + para.l + host_mass, nearctic_cdat, lambda = "ML")
+summary(nearctic_para_mod)
+anova(nearctic_para_mod)
+
+nearctic_host_mod <- pgls(para.mpd ~ host.pubs + close + nonclose + intermediate + para.l + host_mass, nearctic_cdat, lambda = "ML")
+summary(nearctic_host_mod)
+anova(nearctic_host_mod)
 
 ```
 
@@ -1558,64 +1583,62 @@ anova(nearctic_mod)
 
 ##with single host species removed
 
-#subset nearctic parasite and host research effort sums to exclude single host species
-remove_nearctic_host_sums<-nearctic_host_sums[which(names(nearctic_host_sums) %in% no_specialists_nearctic_parasite_tree$tip.label)]
-remove_nearctic_host_sums<-remove_nearctic_host_sums[match(no_specialists_nearctic_parasite_tree$tip.label, names(remove_nearctic_host_sums))]
-
-remove_nearctic_para_pubs<-nearctic_para_pubs[which(nearctic_para_pubs$term %in% no_specialists_nearctic_parasite_tree$tip.label),]
-remove_nearctic_para_pubs<-remove_nearctic_para_pubs[match(no_specialists_nearctic_parasite_tree$tip.label, remove_nearctic_para_pubs$term),]
-
 # prepare transmission data
-remove_nearctic_transmission<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% no_specialists_nearctic_parasite_tree$tip.label),]
-remove_nearctic_transmission<-remove_nearctic_transmission[match(no_specialists_nearctic_parasite_tree$tip.label, remove_nearctic_transmission$CorrectName),]
+nearctic_transmission_no_spec<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% no_specialists_nearctic_parasite_tree$tip.label),]
+nearctic_transmission_no_spec<-nearctic_transmission_no_spec[match(no_specialists_nearctic_parasite_tree$tip.label, nearctic_transmission_no_spec$CorrectName),]
+
+#prepare mpd and sampling bias data
+nearctic_para_pubs_no_spec<-nearctic_para_pubs[which(nearctic_para_pubs$term %in% no_specialists_nearctic_parasite_tree$tip.label),]
+nearctic_para_pubs_no_spec<-nearctic_para_pubs_no_spec[match(no_specialists_nearctic_parasite_tree$tip.label, nearctic_para_pubs_no_spec$term),]
 
 #### All species ####
 
-dat<-data.frame(taxa=no_specialists_nearctic_parasite_tree$tip.label,
-                para.mpd=nearctic_para_mpd_no_specialists,              #mpd
-                log.pubs=log(remove_nearctic_para_pubs$pubs + remove_nearctic_host_sums),
+nearctic_dat<-data.frame(taxa=no_specialists_nearctic_parasite_tree$tip.label,
+                para.mpd=nearctic_para_pubs_no_spec$mpd,              #mpd
+                para.pubs=log(nearctic_para_pubs_no_spec$pubs),
+                host.pubs=nearctic_para_pubs_no_spec$hostPubSum,
                 close=as.factor(remove_nearctic_transmission$close),
                 env=as.factor(remove_nearctic_transmission$nonclose),
                 intermediate=as.factor(remove_nearctic_transmission$intermediate))
 
-cdat<-comparative.data(data=dat, phy=no_specialists_nearctic_parasite_tree, names.col = "taxa")
+nearctic_cdat<-comparative.data(data=nearctic_dat, phy=no_specialists_nearctic_parasite_tree, names.col = "taxa")
 
-summary(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .904))
-anova(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .904))
-plot(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .904))
+summary(pgls(para.mpd ~ para.pubs + close + env + intermediate, nearctic_cdat, lambda = "ML"))
+anova(pgls(para.mpd ~ para.pubs + close + env + intermediate, nearctic_cdat, lambda = "ML"))
+
+summary(pgls(para.mpd ~ host.pubs + close + env + intermediate, nearctic_cdat, lambda = "ML")) #does not run when host.pubs is logged
+anova(pgls(para.mpd ~ host.pubs + close + env + intermediate, nearctic_cdat, lambda = "ML"))
+
 
 #### Dataset that includes parasite and host traits, species ####
 
-#create pgls data from nearctic_para_mpd_no_specialists
-pgls_remove_n_para_mpd<-nearctic_para_mpd_no_specialists[match(remove_nearctic_pgls$tip.label, names(nearctic_para_mpd_no_specialists))]
+nearctic_para_pubs_pgls_no_spec<-nearctic_para_pubs_no_spec[which(nearctic_para_pubs_no_spec$term %in% nearctic_pgls_no_spec$tip.label),]
+nearctic_para_pubs_pgls_no_spec<-nearctic_para_pubs_no_spec[match(nearctic_pgls_no_spec$tip.label, nearctic_para_pubs_pgls_no_spec$term),]
 
-#create pgls data for research effort
-pgls_remove_n_para_pubs<-nearctic_para_pubs$pubs[match(remove_nearctic_pgls$tip.label, nearctic_para_pubs$term)]
-
-#create pgls data for sum of host publications per parasite
-pgls_remove_n_host_pubs<-nearctic_host_sums[match(remove_nearctic_pgls$tip.label, names(nearctic_host_sums))]
-
-remove_nearctic_dat<-data.frame(taxa=remove_nearctic_pgls$tip.label,
-                para.mpd=pgls_remove_n_para_mpd,
-                log.pubs=log(pgls_remove_n_para_pubs + pgls_remove_n_host_pubs),
-                para.l=remove.nearctic.b.size$mean_l,
-                para.w=remove.nearctic.b.size$mean_w,
-                para.b=remove.nearctic.b.size$ratio,
-                close=as.factor(remove_nearctic_trans$close),
-                nonclose=as.factor(remove_nearctic_trans$nonclose),
-                intermediate=as.factor(remove_nearctic_trans$intermediate),
-                host_mass=remove_nearctic_traits$avgMass)
+nearctic_dat_no_spec<-data.frame(taxa=nearctic_pgls_no_spec$tip.label,
+                para.mpd=nearctic_para_pubs_pgls_no_spec$mpd,
+                para.pubs=log(nearctic_para_pubs_pgls_no_spec$pubs),
+                host.pubs=log(nearctic_para_pubs_pgls_no_spec$hostPubSum),
+                para.l=nearctic_b_size_no_spec$mean_l,
+                para.w=nearctic_b_size_no_spec$mean_w,
+                para.b=nearctic_b_size_no_spec$ratio,
+                close=as.factor(nearctic_trans_no_spec$close),
+                nonclose=as.factor(nearctic_trans_no_spec$nonclose),
+                intermediate=as.factor(nearctic_trans_no_spec$intermediate),
+                host_mass=nearctic_traits_no_spec$avgMass)
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
-remove_nearctic_cdat<-comparative.data(data=remove_nearctic_dat, phy=remove_nearctic_pgls, names.col = "taxa")
-print(remove_nearctic_cdat)
+nearctic_no_spec_cdat<-comparative.data(data=nearctic_dat_no_spec, phy=nearctic_pgls_no_spec, names.col = "taxa")
+print(nearctic_no_spec_cdat)
 
 ## model testing ##
 
 #all predictors 
-remove_nearctic_mod <- pgls(para.mpd~ log.pubs + close + nonclose + intermediate +para.l + host_mass, remove_nearctic_cdat, lambda = .904)
-summary(remove_nearctic_mod)
-anova(remove_nearctic_mod)
+summary(pgls(para.mpd~ para.pubs + close + nonclose + intermediate +para.l + host_mass,nearctic_no_spec_cdat, lambda = "ML"))
+anova(pgls(para.mpd~ para.pubs + close + nonclose + intermediate +para.l + host_mass,nearctic_no_spec_cdat, lambda = "ML"))
+
+summary(pgls(para.mpd~ host.pubs + close + nonclose + intermediate +para.l + host_mass,nearctic_no_spec_cdat, lambda = "ML"))
+anova(pgls(para.mpd~ host.pubs + close + nonclose + intermediate +para.l + host_mass,nearctic_no_spec_cdat, lambda = "ML"))
 
 ```
 
@@ -1624,133 +1647,119 @@ anova(remove_nearctic_mod)
 
 ##with single host species MPD = 0
 
-#calculate a sum of host publications for each parasite 
-gmpd_host_sums<-vector("numeric", length=nrow(gmpd_df))
-for (p.index in 1:nrow (gmpd_df)) {
-  host.index <- unlist(gmpd_df[p.index,])
-  host.names <- names(host.index)[which(host.index > 0)]
-  gmpd_host_sums[p.index] <- sum(gmpd_host_pubs[gmpd_host_pubs$term%in%host.names,"pubs"])
-}
-#add parasite names to each sum of host publications
-names(gmpd_host_sums)<-gmpd_para_list
-
 # prepare transmission data
 gmpd_transmission<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% gmpd_parasite_tree$tip.label),]
 gmpd_transmission<-gmpd_transmission[match(gmpd_parasite_tree$tip.label, gmpd_transmission$CorrectName),]
 
 #### All species ####
-dat<-data.frame(taxa=gmpd_parasite_tree$tip.label,
-                para.mpd=gmpd_para_mpd,              #mpd
-                log.pubs=log(gmpd_para_pubs$pubs + gmpd_host_sums), #research bias log(total no. of hits pubmed)
+gmpd_dat<-data.frame(taxa=gmpd_parasite_tree$tip.label,
+                para.mpd=gmpd_para_pubs$mpd,              #mpd
+                para.pubs=log(gmpd_para_pubs$pubs), 
+                host.pubs=log(gmpd_para_pubs$hostPubSum),
                 close=as.factor(gmpd_transmission$close),
                 env=as.factor(gmpd_transmission$nonclose),
                 intermediate=as.factor(gmpd_transmission$intermediate))
 
-cdat<-comparative.data(data=dat, phy=gmpd_parasite_tree, names.col = "taxa")
+gmpd_cdat<-comparative.data(data=gmpd_dat, phy=gmpd_parasite_tree, names.col = "taxa")
 
-summary(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .615))
-anova(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .615))
-plot(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .615))
+summary(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_cdat, lambda = "ML"))
+anova(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_cdat, lambda = "ML"))  #Environmental transmission p= 0.02
 
 
 #### Dataset that includes parasite and host traits , species ####
 
 #create pgls data from gmpd_para_mpd
-pgls_gmpd_para_mpd<-gmpd_para_mpd[match(gmpd_pgls$tip.label, names(gmpd_para_mpd))]
+pgls_gmpd_para_pubs<-gmpd_para_pubs[match(gmpd_pgls$tip.label, gmpd_para_pubs$term),]
 
-#create pgls data for research effort
-pgls_gmpd_para_pubs<-corrected$pubs[match(gmpd_pgls$tip.label, corrected$term)]
-
-#create pgls data for sum of host publications per parasite
-pgls_gmpd_host_pubs<-gmpd_host_sums[match(gmpd_pgls$tip.label, names(gmpd_host_sums))]
-
-gmpd_dat<-data.frame(taxa=gmpd_pgls$tip.label,
-                para.mpd=pgls_gmpd_para_mpd,
-                log.pubs=log(pgls_gmpd_para_pubs + pgls_gmpd_host_pubs),
-                para.l=gmpd.b.size$mean_l,
-                para.w=gmpd.b.size$mean_w,
-                para.b=gmpd.b.size$ratio,
+gmpd_trait_dat<-data.frame(taxa=gmpd_pgls$tip.label,
+                para.mpd=pgls_gmpd_para_pubs$mpd,
+                para.pubs=log(pgls_gmpd_para_pubs$pubs),
+                host.pubs=log(pgls_gmpd_para_pubs$hostPubSum),
+                para.l=gmpd_b_size$mean_l,
+                para.w=gmpd_b_size$mean_w,
+                para.b=gmpd_b_size$ratio,
                 close=as.factor(gmpd_trans$close),
                 nonclose=as.factor(gmpd_trans$nonclose),
                 intermediate=as.factor(gmpd_trans$intermediate),
                 host_mass=gmpd_traits$avgMass)
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
-gmpd_cdat<-comparative.data(data=gmpd_dat, phy=gmpd_pgls, names.col = "taxa")
+gmpd_trait_cdat<-comparative.data(data=gmpd_trait_dat, phy=gmpd_pgls, names.col = "taxa")
 print(gmpd_cdat)
 
 ## model testing ##
 
 #all predictors
-gmpd_mod <- pgls(para.mpd~ log.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_cdat, lambda = "ML")
-summary(gmpd_mod)
-anova(gmpd_mod)
+summary(pgls(para.mpd~ para.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_trait_cdat, lambda = "ML"))
+anova(pgls(para.mpd~ para.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_trait_cdat, lambda = "ML"))
+
+summary(pgls(para.mpd~ host.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_trait_cdat, lambda = "ML"))
+anova(pgls(para.mpd~ host.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_trait_cdat, lambda = "ML")) #parasite length p = 0.02
 ```
 
 
 ```{r pgls_global_shR, include = FALSE}
 ##with single host species removed
 
-#subset nearctic parasite and host research effort sums to exclude single host species
-remove_gmpd_host_sums<-gmpd_host_sums[which(names(gmpd_host_sums) %in% no_specialists_gmpd_parasite_tree$tip.label)]
-remove_gmpd_host_sums<-remove_gmpd_host_sums[match(no_specialists_gmpd_parasite_tree$tip.label, names(remove_gmpd_host_sums))]
-
-remove_gmpd_para_pubs<-gmpd_para_pubs[which(gmpd_para_pubs$term %in% no_specialists_gmpd_parasite_tree$tip.label),]
-remove_gmpd_para_pubs<-remove_gmpd_para_pubs[match(no_specialists_gmpd_parasite_tree$tip.label, remove_gmpd_para_pubs$term),]
-
 # prepare transmission data
-remove_gmpd_transmission<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% no_specialists_gmpd_parasite_tree$tip.label),]
-remove_gmpd_transmission<-remove_gmpd_transmission[match(no_specialists_gmpd_parasite_tree$tip.label, remove_gmpd_transmission$CorrectName),]
+gmpd_transmission_no_spec<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% no_specialists_gmpd_parasite_tree$tip.label),]
+gmpd_transmission_no_spec<-gmpd_transmission_no_spec[match(no_specialists_gmpd_parasite_tree$tip.label, gmpd_transmission_no_spec$CorrectName),]
+
+#prepare mpd and sampling bias data
+gmpd_para_pubs_no_spec<-gmpd_para_pubs[which(gmpd_para_pubs$term %in% no_specialists_gmpd_parasite_tree$tip.label),]
+gmpd_para_pubs_no_spec<-gmpd_para_pubs_no_spec[match(no_specialists_gmpd_parasite_tree$tip.label, gmpd_para_pubs_no_spec$term),]
 
 #### All species (144) ####
 
-dat<-data.frame(taxa=no_specialists_gmpd_parasite_tree$tip.label,
-                para.mpd=gmpd_para_mpd_no_specialists,              #mpd
-                log.pubs=log(remove_gmpd_para_pubs$pubs + remove_gmpd_host_sums),
-                close=as.factor(remove_gmpd_transmission$close),
-                env=as.factor(remove_gmpd_transmission$nonclose),
-                intermediate=as.factor(remove_gmpd_transmission$intermediate))
+gmpd_no_spec_dat<-data.frame(taxa=no_specialists_gmpd_parasite_tree$tip.label,
+                para.mpd=gmpd_para_pubs_no_spec$mpd,              #mpd
+                para.pubs=log(gmpd_para_pubs_no_spec$pubs),
+                host.pubs=log(gmpd_para_pubs_no_spec$hostPubSum),
+                close=as.factor(gmpd_transmission_no_spec$close),
+                env=as.factor(gmpd_transmission_no_spec$nonclose),
+                intermediate=as.factor(gmpd_transmission_no_spec$intermediate))
 
-cdat<-comparative.data(data=dat, phy=no_specialists_gmpd_parasite_tree, names.col = "taxa")
+gmpd_no_spec_cdat<-comparative.data(data=gmpd_no_spec_dat, phy=no_specialists_gmpd_parasite_tree, names.col = "taxa")
+print(gmpd_no_spec_cdat)
 
 
-summary(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .896))
-anova(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .896))
-plot(pgls(para.mpd ~ log.pubs + close + env + intermediate, cdat, lambda = .896))
+summary(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_no_spec_cdat, lambda = "ML"))
+anova(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_no_spec_cdat, lambda = "ML")) #close and environmental transmission p < 0.05
+plot(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_no_spec_cdat, lambda = "ML"))
+
 
 #### Dataset that includes parasite and host traits, 42 species ####
 
-#create pgls data from gmpd_para_mpd_no_specialists
-pgls_remove_g_para_mpd<-gmpd_para_mpd_no_specialists[match(remove_gmpd_pgls$tip.label, names(gmpd_para_mpd_no_specialists))]
+gmpd_para_pubs_pgls_no_spec<-gmpd_para_pubs_no_spec[which(gmpd_para_pubs_no_spec$term %in% gmpd_pgls_no_spec$tip.label),]
+gmpd_para_pubs_pgls_no_spec<-gmpd_para_pubs_no_spec[match(gmpd_pgls_no_spec$tip.label, gmpd_para_pubs_pgls_no_spec$term),]
 
-#create pgls data for research effort
-pgls_remove_g_para_pubs<-gmpd_para_pubs$pubs[match(remove_gmpd_pgls$tip.label, gmpd_para_pubs$term)]
+gmpd_b_size_pgls_no_spec<-gmpd_b_size_no_spec[which(gmpd_b_size_no_spec$Parasite.species %in% gmpd_pgls_no_spec$tip.label),]
+gmpd_b_size_pgls_no_spec<-gmpd_b_size_no_spec[match(gmpd_pgls_no_spec$tip.label, gmpd_b_size_pgls_no_spec$Parasite.species),]
 
-#create pgls data for sum of host publications per parasite
-pgls_remove_g_host_pubs<-gmpd_host_sums[match(remove_gmpd_pgls$tip.label, names(gmpd_host_sums))]
-
-remove_gmpd_dat<-data.frame(taxa=remove_gmpd_pgls$tip.label,
-                para.mpd=pgls_remove_g_para_mpd,
-                log.pubs=log(pgls_remove_g_para_pubs + pgls_remove_g_host_pubs),
-                para.l=remove.gmpd.b.size$mean_l,
-                para.w=remove.gmpd.b.size$mean_w,
-                para.b=remove.gmpd.b.size$ratio,
-                close=as.factor(remove_gmpd_trans$close),
-                nonclose=as.factor(remove_gmpd_trans$nonclose),
-                intermediate=as.factor(remove_gmpd_trans$intermediate),
-                host_mass=remove_gmpd_traits$avgMass)
+gmpd_traits_no_spec_dat<-data.frame(taxa=gmpd_pgls_no_spec$tip.label,
+                para.mpd=gmpd_para_pubs_pgls_no_spec$mpd,
+                para.pubs=log(gmpd_para_pubs_pgls_no_spec$pubs),
+                host.pubs=log(gmpd_para_pubs_pgls_no_spec$hostPubSum),
+                para.l=gmpd_b_size_pgls_no_spec$mean_l,
+                para.w=gmpd_b_size_pgls_no_spec$mean_w,
+                para.b=gmpd_b_size_pgls_no_spec$ratio,
+                close=as.factor(gmpd_trans_no_spec$close),
+                nonclose=as.factor(gmpd_trans_no_spec$nonclose),
+                intermediate=as.factor(gmpd_trans_no_spec$intermediate),
+                host_mass=gmpd_traits_no_spec$avgMass)
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
-remove_gmpd_cdat<-comparative.data(data=remove_gmpd_dat, phy=remove_gmpd_pgls, names.col = "taxa")
-print(remove_gmpd_cdat)
+gmpd_traits_no_spec_cdat<-comparative.data(data=gmpd_traits_no_spec_dat, phy=gmpd_pgls_no_spec, names.col = "taxa")
+print(gmpd_traits_no_spec_cdat)
 
 ## model testing ##
 
 #all predictors
-remove_gmpd_mod <- pgls(para.mpd~ log.pubs + close + nonclose + intermediate + para.l + host_mass, remove_gmpd_cdat, lambda = "ML")
-summary(remove_gmpd_mod)
-anova(remove_gmpd_mod)
+summary(pgls(para.mpd~ para.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
+anova(pgls(para.mpd~ para.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
 
+summary(pgls(para.mpd~ host.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
+anova(pgls(para.mpd~ host.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
 ```
 
 
@@ -1761,7 +1770,7 @@ contMap(nearctic_mammal_tree, nearctic_mam_mpd, fsize=0.3, lwd =1)
 
 #### GLOBAL DATASET ####
 #single parasite species have mpd = 0
-contMap(gmpd_mammal_tree, gmpd_mam_mpd, fsize=0.3, lwd =1, type ="fan")
+contMap(gmpd_mammal_tree, gmpd_mam_mpd, fsize=0.3, lwd =1, type ="fan") #check for polytomies
 
 ```
 
@@ -1777,13 +1786,16 @@ contMap(gmpd_mammal_tree, gmpd_mam_mpd, fsize=0.3, lwd =1, type ="fan")
 #### Calulate pairwise distance (PD) of each mammal to homo sapiens ####
 
 #subset PHYLACINE mammal tree to include GMPD mammals
-setdiff(large_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->group2
+n<-gmpd_data[which(gmpd_data$HostCorrectedName %in% gmpd_mammal_tree$tip.label),]
+mammal_names<-unique(n$HostCorrectedName)
+mammal_names<-c(mammal_names, "Homo sapiens")
 
-#add back the humans
-group3 <- group2[group2 != "Homo sapiens"]
+#add full mammal tree to include humans
+full_mammal_tree<-read.nexus("mammal_phylo_consensus.nex")
+full_mammal_tree$tip.label<-gsub("_", " ", full_mammal_tree$tip.label)
 
 #subset the tree
-mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%group3)])
+mammal_tree<-drop.tip(full_mammal_tree, full_mammal_tree$tip.label[which(!(full_mammal_tree$tip.label %in% mammal_names))])
 
 #calculate the pairwise distances
 mam_dis<-cophenetic.phylo(mammal_tree)
@@ -1798,7 +1810,7 @@ names(distances)<-rownames(mam_dis2)
 distance2<-distances[names(distances) != "Homo sapiens"]
 
 #make a dataframe for the figure 
-figure_data<-data.frame("name"= names(global.mam.mpd), "global.mpd" = global.mam.mpd, "distance"= distance2)
+figure_data<-data.frame("name"= gmpd_para_pubs$term, "gmpd_mpd" = gmpd_para_pubs$mpd, "distance"= distance2)
 
 ##label for 
 #figure_data$color<-c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
