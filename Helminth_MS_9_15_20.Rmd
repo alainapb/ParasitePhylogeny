@@ -451,7 +451,16 @@ nearctic_regimes<-corHMM(nearctic_parasite_tree, nearctic_parasite_phyla_data[,c
 #run evolution models
 nearctic_BM_fit <- OUwie(nearctic_regimes$phy, nearctic_parasite_phyla_data[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 nearctic_BMS_fit <- OUwie(nearctic_regimes$phy, nearctic_parasite_phyla_data[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+nearctic_OU_fit <- OUwie(nearctic_regimes$phy, nearctic_parasite_phyla_data, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 nearctic_OUM_fit <- OUwie(nearctic_regimes$phy, nearctic_parasite_phyla_data, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+
+# Put output objects into a list to more easily summarize results
+all_nearctic <- list(nearctic_BM_fit, nearctic_BMS_fit, nearctic_OU_fit, nearctic_OUM_fit)
+names(all_nearctic) <- c("BM", "BMS", "OU1", "OUM")
+# Summarize model fits
+all_nearctic_fits <- tibble(model = names(all_nearctic), k = map_dbl(all_nearctic, ~.$param.count),
+loglik = map_dbl(all_nearctic, ~.$loglik), AICc = map_dbl(all_nearctic, ~.$AICc))
+all_nearctic_fits # Print results table
 
 
 #subset the data by Phyla
