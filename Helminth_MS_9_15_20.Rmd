@@ -179,7 +179,7 @@ nearctic_mam_mpd_no_specialists<-nearctic_mam_mpd_no_specialists[!is.na(nearctic
 gmpd_dis_para<-cophenetic.phylo(gmpd_parasite_tree) #interspecific distance matrix of parasites
 gmpd_dis_mam<-cophenetic.phylo(gmpd_mammal_tree) #intespecific distance matrix of mammals from small tree
 
-##make the pipeline to get the absense presence of each parasite (rows) that infect a given host (column)
+##make the pipeline to get the absence presence of each parasite (rows) that infect a given host (column)
 gmpd_mamlist<-as.vector(gmpd_mammal_tree$tip.label) #list of mammals in tip label order
 gmpd_para_list<-as.vector(gmpd_parasite_tree$tip.label)
 gmpd_df <- data.frame(matrix(ncol=length(gmpd_mamlist),nrow=length(gmpd_para_list)), row.names = gmpd_para_list)
@@ -263,6 +263,7 @@ contMap(no_specialists_gmpd_parasite_tree, gmpd_para_nhosts_no_specialists, fsiz
 ```
 
 
+#Testing for Phylogenetic Signal when accounting for sampling bias
 ```{r sampling_bias_correction, include=TRUE}
 ## Run four models:
 ## 1. gls using citations to predict range (either MPD or number of hosts);
@@ -440,36 +441,93 @@ g<-gmpd_data[match(nearctic_parasite_tree$tip.label, gmpd_data$ParasiteCorrected
 
 #make Phyla dataframe (names, regimes, trait)
 nearctic_parasite_phyla_data<-data.frame(nearctic_parasite_tree$tip.label)
-nearctic_parasite_phyla_data$regime<-g$ParPhylum
-nearctic_parasite_phyla_data$trait<-nearctic_para_mpd
+nearctic_parasite_phyla_data$regime<-g$ParClass
+nearctic_parasite_phyla_data$trait<-nearctic_para_pubs$mpd
+nearctic_parasite_phyla_data$phyla<-g$ParPhylum
+
+## Get regimes for internal nodes using corHMM
+nearctic_regimes<-corHMM(nearctic_parasite_tree, nearctic_parasite_phyla_data[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+
+#run evolution models
+nearctic_BM_fit <- OUwie(nearctic_regimes$phy, nearctic_parasite_phyla_data[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+nearctic_BMS_fit <- OUwie(nearctic_regimes$phy, nearctic_parasite_phyla_data[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+nearctic_OUM_fit <- OUwie(nearctic_regimes$phy, nearctic_parasite_phyla_data, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+
+
+#subset the data by Phyla
+nearctic_acanth<- nearctic_parasite_phyla_data %>% filter(phyla == "Acanthocephala")
+nearctic_nema<-nearctic_parasite_phyla_data %>% filter(phyla == "Nematoda")
+nearctic_platy<-nearctic_parasite_phyla_data %>% filter(phyla == "Platyhelminthes")
+
+#subset the tree by Phyla
+nearctic_acanth_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_acanth$nearctic_parasite_tree.tip.label))])
+
+nearctic_nema_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_nema$nearctic_parasite_tree.tip.label))])
+
+nearctic_platy_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_platy$nearctic_parasite_tree.tip.label))])
 
 ## Phylogenetic comparative analysis analysis
-## Convert phyla names to numbers for corHMM
-nearctic_parasite_phyla_data$regAsNum <- as.numeric(as.factor(nearctic_parasite_phyla_data$regime))
+
 ## Get regimes for internal nodes using corHMM
-regimes <- corHMM(nearctic_parasite_tree, nearctic_parasite_phyla_data[,c(1,4)], model="ER", rate.cat=1, node.states = "marginal")
-## Convert internal node regimes back to phylum names and assign to the tree
-nearctic_parasite_tree$node.label <- unname(sapply(as.character(regimes$phy$node.label), function(n) switch(n, "1"="Acanthocephala", "2"="Nematoda", "3"="Platyhelminthes")))
+acanth_regimes <- corHMM(nearctic_acanth_tree, nearctic_acanth[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+nema_regimes <- corHMM(nearctic_nema_tree, nearctic_nema[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+platy_regimes <- corHMM(nearctic_platy_tree, nearctic_platy[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
 
 ## Run 3 models: BM, BMS, OUM
-nearctic_mpd_BM_fit <- OUwie(nearctic_parasite_tree, nearctic_parasite_phyla_data[,1:3], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
-nearctic_mpd_BMS_fit <- OUwie(nearctic_parasite_tree, nearctic_parasite_phyla_data[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, starting.vals=16500, ub=Inf) ## BMS fails, likely because of fully nested trees
-nearctic_mpd_OUM_fit <- OUwie(nearctic_parasite_tree, nearctic_parasite_phyla_data, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 
+#Acanthocephala
+nearctic_acanth_BM_fit <- OUwie(acanth_regimes$phy, nearctic_acanth[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+nearctic_acanth_BMS_fit <- OUwie(acanth_regimes$phy, nearctic_acanth[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+nearctic_acanth_OUM_fit <- OUwie(acanth_regimes$phy, nearctic_acanth, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+
+#Nematoda
+nearctic_nema_BM_fit <- OUwie(nema_regimes$phy, nearctic_nema[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+nearctic_nema_BMS_fit <- OUwie(nema_regimes$phy, nearctic_nema[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+nearctic_nema_OUM_fit <- OUwie(nema_regimes$phy, nearctic_nema, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+
+#Platyhelminthes
+nearctic_platy_BM_fit <- OUwie(platy_regimes$phy, nearctic_platy[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best model
+nearctic_platy_BMS_fit <- OUwie(platy_regimes$phy, nearctic_platy[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+nearctic_platy_OUM_fit <- OUwie(platy_regimes$phy, nearctic_platy, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 
 #######################################
 
 ## Nearctic dataset with single host species MPD removed
 
-#match GMPD data to the remove_nearctic tree (to get Phyla classifications)
-h<-gmpd_data[match(no_specialists_nearctic_parasite_tree$tip.label, gmpd_data$ParasiteCorrectedName),]
+nearctic_acanth_no_spec<-filter(nearctic_acanth, trait > 0)
+nearctic_nema_no_spec<-filter(nearctic_nema, trait > 0)
+nearctic_platy_no_spec<-filter(nearctic_platy, trait > 0)
 
-#make Phyla dataframe (names, regimes, trait)
-remove_nearctic_phyla_data<-data.frame(no_specialists_nearctic_parasite_tree$tip.label)
-remove_nearctic_phyla_data$regime<-h$ParPhylum
-remove_nearctic_phyla_data$trait<-nearctic_para_mpd_no_specialists
+#subset trees to remove single host species
+
+nearctic_acanth_tree_no_spec<-drop.tip(nearctic_acanth_tree, nearctic_acanth_tree$tip.label[which(!(nearctic_acanth_tree$tip.label %in% nearctic_acanth_no_spec$nearctic_parasite_tree.tip.label))])
+
+nearctic_nema_tree_no_spec<-drop.tip(nearctic_nema_tree, nearctic_nema_tree$tip.label[which(!(nearctic_nema_tree$tip.label %in% nearctic_nema_no_spec$nearctic_parasite_tree.tip.label))])
+
+nearctic_platy_tree_no_spec<-drop.tip(nearctic_platy_tree, nearctic_platy_tree$tip.label[which(!(nearctic_platy_tree$tip.label %in% nearctic_platy_no_spec$nearctic_parasite_tree.tip.label))])
+
+## Get regimes for internal nodes using corHMM
+acanth_no_spec_regimes <- corHMM(nearctic_acanth_tree_no_spec, nearctic_acanth_no_spec[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+nema_no_spec_regimes <- corHMM(nearctic_nema_tree_no_spec, nearctic_nema_no_spec[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+platy_no_spec_regimes <- corHMM(nearctic_platy_tree_no_spec, nearctic_platy_no_spec[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
 
 
+## Run 3 models: BM, BMS, OUM
+
+#Acanthocephala
+nearctic_acanth_no_spec_BM_fit <- OUwie(acanth_no_spec_regimes$phy, nearctic_acanth_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+nearctic_acanth_no_spec_BMS_fit <- OUwie(acanth_no_spec_regimes$phy, nearctic_acanth_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  #best fit
+nearctic_acanth_no_spec_OUM_fit <- OUwie(acanth_no_spec_regimes$phy, nearctic_acanth_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+
+#Nematoda
+nearctic_nema_no_spec_BM_fit <- OUwie(nema_no_spec_regimes$phy, nearctic_nema_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+nearctic_nema_no_spec_BMS_fit <- OUwie(nema_no_spec_regimes$phy, nearctic_nema_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+nearctic_nema_no_spec_OUM_fit <- OUwie(nema_no_spec_regimes$phy, nearctic_nema_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+
+#Platyhelminthes
+nearctic_platy_no_spec_BM_fit <- OUwie(platy_no_spec_regimes$phy, nearctic_platy_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best model
+nearctic_platy_no_spec_BMS_fit <- OUwie(platy_no_spec_regimes$phy, nearctic_platy_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+nearctic_platy_no_spec_OUM_fit <- OUwie(platy_no_spec_regimes$phy, nearctic_platy_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 ```
 
 
@@ -481,120 +539,90 @@ k<-gmpd_data[match(gmpd_parasite_tree$tip.label, gmpd_data$ParasiteCorrectedName
 
 #make Phyla dataframe (names, regimes, trait)
 gmpd_phyla_data<-data.frame(gmpd_parasite_tree$tip.label)
-gmpd_phyla_data$regime<-k$ParPhylum
+gmpd_phyla_data$regime<-k$ParClass
 gmpd_phyla_data$trait<-gmpd_para_mpd
+gmpd_phyla_data$phyla<-k$ParPhylum
 
-## Painting taxonomy-based regimes onto this tree
-gmpd_ouchtree <- ape2ouch(gmpd_parasite_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-gmpd_ouchdata <- rep(NA, length=gmpd_ouchtree@nnodes)
-for (i in 1:length(gmpd_phyla_data$gmpd_parasite_tree.tip.label))
-  gmpd_ouchdata[which(gmpd_ouchtree@nodelabels==gmpd_phyla_data$gmpd_parasite_tree.tip.label[i])] <- gmpd_phyla_data$trait[i]
-gmpd_ouchdata <- as.data.frame(gmpd_ouchdata)
+## Get regimes for internal nodes using corHMM
+gmpd_regimes<-corHMM(gmpd_parasite_tree, gmpd_phyla_data[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
 
-## You can use the code above, replacing nearctic with global, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
+#run evolution models
+gmpd_BM_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)#best fit
+gmpd_BMS_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_OUM_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 
-## Find the node that corresponds to the most recent common ancestor of all Platyhelminthes
-## which nodes in the ouchtree correspond to the Plats
-gmpd_ouchtree@nodelabels%in%gmpd_phyla_data$gmpd_parasite_tree.tip.label[which(gmpd_phyla_data$regime=="Platyhelminthes")] %>% which -> platys
-## get their lineages and find the nodes that are in common across all lineages
-gmpd_ouchtree@lineages[platys] -> platy_lineages
-platy_lineages[[1]][sapply(platy_lineages[[1]], function(n) lapply(platy_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 1
+#subset the data by Phyla
+gmpd_acanth<- gmpd_phyla_data %>% filter(phyla == "Acanthocephala")
+gmpd_nema<-gmpd_phyla_data %>% filter(phyla == "Nematoda")
+gmpd_platy<-gmpd_phyla_data %>% filter(phyla == "Platyhelminthes")
 
-## Find the node that corresponds to the most recent common ancestor of all Acanthocephalans
-## which nodes in the ouchtree correspond to the Acanths
-gmpd_ouchtree@nodelabels%in%gmpd_phyla_data$gmpd_parasite_tree.tip.label[which(gmpd_phyla_data$regime=="Acanthocephala")] %>% which -> acanths
-## get their lineages and find the nodes that are in common across all lineages
-gmpd_ouchtree@lineages[acanths] -> acanth_lineages
-acanth_lineages[[1]][sapply(acanth_lineages[[1]], function(n) lapply(acanth_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 244
+#subset the tree by Phyla
+gmpd_acanth_tree<-drop.tip(gmpd_parasite_tree, gmpd_parasite_tree$tip.label[which(!(gmpd_parasite_tree$tip.label %in% gmpd_acanth$gmpd_parasite_tree.tip.label))])
 
-## Find the node that corresponds to the most recent common ancestor of all Nematodes
-## which nodes in the ouchtree correspond to the Nematodes
-gmpd_ouchtree@nodelabels%in%gmpd_phyla_data$gmpd_parasite_tree.tip.label[which(gmpd_phyla_data$regime=="Nematoda")] %>% which -> nematodes
-## get their lineages and find the nodes that are in common across all lineages
-gmpd_ouchtree@lineages[nematodes] -> nematode_lineages
-nematode_lineages[[1]][sapply(nematode_lineages[[1]], function(n) lapply(nematode_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] #228
+gmpd_nema_tree<-drop.tip(gmpd_parasite_tree, gmpd_parasite_tree$tip.label[which(!(gmpd_parasite_tree$tip.label %in% gmpd_nema$gmpd_parasite_tree.tip.label))])
 
+gmpd_platy_tree<-drop.tip(gmpd_parasite_tree, gmpd_parasite_tree$tip.label[which(!(gmpd_parasite_tree$tip.label %in% gmpd_platy$gmpd_parasite_tree.tip.label))])
 
-## paint the regimes onto the tree
-paint(gmpd_ouchtree, subtree=c("1"="Platys","228"="Nematodes","244"="Acanths"), branch=c("1"="Platys")) -> gmpd_oum_regimes
-## global regime
-paint(gmpd_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> gmpd_ou1_regimes
-## Plot it to make sure it looks good
-plot(gmpd_ouchtree, regimes=gmpd_oum_regimes)
+## Phylogenetic comparative analysis analysis
 
-## Now do the fitting using ouch
-## OUM: AICc = 2490.73, alpha = 15.51, sigma.sq = 39836.98, Acanths = 24.97, Nematodes = 21.9, Platys = 46.97
-gmpd_oum_ouch <- hansen(data=gmpd_ouchdata, tree=gmpd_ouchtree, regimes=gmpd_oum_regimes, sqrt.alpha=100, sigma=100)
+## Get regimes for internal nodes using corHMM
+gmpd_acanth_regimes <- corHMM(gmpd_acanth_tree, gmpd_acanth[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+gmpd_nema_regimes <- corHMM(gmpd_nema_tree, gmpd_nema[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+gmpd_platy_regimes <- corHMM(gmpd_platy_tree, gmpd_platy[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
 
-## OU1: AICc = 2499.87, alpha = 9.00, sigma.sq = 26587.7, global = 33.2 
-gmpd_ou1_ouch <- hansen(data=gmpd_ouchdata, tree=gmpd_ouchtree, regimes=gmpd_ou1_regimes, sqrt.alpha=100, sigma=100)
+## Run 3 models: BM, BMS, OUM
 
-## BM: AICc = 2580.92, sigma.sq = 12287.94
-gmpd_bm_ouch <- brown(data=gmpd_ouchdata, tree=gmpd_ouchtree)
+#Acanthocephala
+gmpd_acanth_BM_fit <- OUwie(gmpd_acanth_regimes$phy, gmpd_acanth[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_acanth_BMS_fit <- OUwie(gmpd_acanth_regimes$phy, gmpd_acanth[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_acanth_OUM_fit <- OUwie(gmpd_acanth_regimes$phy, gmpd_acanth, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+
+#Nematoda
+gmpd_nema_BM_fit <- OUwie(gmpd_nema_regimes$phy, gmpd_nema[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_nema_BMS_fit <- OUwie(gmpd_nema_regimes$phy, gmpd_nema[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_nema_OUM_fit <- OUwie(gmpd_nema_regimes$phy, gmpd_nema, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+
+#Platyhelminthes
+gmpd_platy_BM_fit <- OUwie(gmpd_platy_regimes$phy, gmpd_platy[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best model
+gmpd_platy_BMS_fit <- OUwie(gmpd_platy_regimes$phy, gmpd_platy[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_platy_OUM_fit <- OUwie(gmpd_platy_regimes$phy, gmpd_platy, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 
 #######################################
 
-##with single host species MPD removed
+#GMPD with single host species removed
+gmpd_acanth_no_spec<-filter(gmpd_acanth, trait > 0)
+gmpd_nema_no_spec<-filter(gmpd_nema, trait > 0)
+gmpd_platy_no_spec<-filter(gmpd_platy, trait > 0)
 
-#match GMPD data to the remove_global tree
-l<-gmpd_data[match(no_specialists_gmpd_parasite_tree$tip.label, gmpd_data$ParasiteCorrectedName),]
+#subset trees to remove single host species
 
-#make Phyla dataframe for OUwie (names, regimes, trait)
-remove_gmpd_phyla_data<-data.frame(no_specialists_gmpd_parasite_tree$tip.label)
-remove_gmpd_phyla_data$regime<-l$ParPhylum
-remove_gmpd_phyla_data$trait<-gmpd_para_mpd_no_specialists
+gmpd_acanth_tree_no_spec<-drop.tip(gmpd_acanth_tree, gmpd_acanth_tree$tip.label[which(!(gmpd_acanth_tree$tip.label %in% gmpd_acanth_no_spec$gmpd_parasite_tree.tip.label))])
 
-## Prepare for ouch
-remove_gmpd_ouchtree <- ape2ouch(no_specialists_gmpd_parasite_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-remove_gmpd_ouchdata <- rep(NA, length=remove_gmpd_ouchtree@nnodes)
-for (i in 1:length(remove_gmpd_phyla_data$
-no_specialists_gmpd_parasite_tree.tip.label))
-  remove_gmpd_ouchdata[which(remove_gmpd_ouchtree@nodelabels==remove_gmpd_phyla_data$
-no_specialists_gmpd_parasite_tree.tip.label[i])] <- remove_gmpd_phyla_data$trait[i]
-remove_gmpd_ouchdata <- as.data.frame(remove_gmpd_ouchdata)
+gmpd_nema_tree_no_spec<-drop.tip(gmpd_nema_tree, gmpd_nema_tree$tip.label[which(!(gmpd_nema_tree$tip.label %in% gmpd_nema_no_spec$gmpd_parasite_tree.tip.label))])
 
-## You can use the code above, replacing nearctic with remove_global, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
-## Find the node that corresponds to the most recent common ancestor of all Platyhelminthes
-## which nodes in the ouchtree correspond to the Plats
-remove_gmpd_ouchtree@nodelabels%in%remove_gmpd_phyla_data$no_specialists_gmpd_parasite_tree.tip.label[which(remove_gmpd_phyla_data$regime=="Platyhelminthes")] %>% which -> platys
-## get their lineages and find the nodes that are in common across all lineages
-remove_gmpd_ouchtree@lineages[platys] -> platy_lineages
-platy_lineages[[1]][sapply(platy_lineages[[1]], function(n) lapply(platy_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 1
+gmpd_platy_tree_no_spec<-drop.tip(gmpd_platy_tree, gmpd_platy_tree$tip.label[which(!(gmpd_platy_tree$tip.label %in% gmpd_platy_no_spec$gmpd_parasite_tree.tip.label))])
 
-## Find the node that corresponds to the most recent common ancestor of all Acanthocephalans
-## which nodes in the ouchtree correspond to the Acanths
-remove_gmpd_ouchtree@nodelabels%in%remove_gmpd_phyla_data$no_specialists_gmpd_parasite_tree.tip.label[which(remove_gmpd_phyla_data$regime=="Acanthocephala")] %>% which -> acanths
-## get their lineages and find the nodes that are in common across all lineages
-remove_gmpd_ouchtree@lineages[acanths] -> acanth_lineages
-acanth_lineages[[1]][sapply(acanth_lineages[[1]], function(n) lapply(acanth_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 155
+## Get regimes for internal nodes using corHMM
+gmpd_acanth_no_spec_regimes <- corHMM(gmpd_acanth_tree_no_spec, gmpd_acanth_no_spec[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+gmpd_nema_no_spec_regimes <- corHMM(gmpd_nema_tree_no_spec, gmpd_nema_no_spec[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+gmpd_platy_no_spec_regimes <- corHMM(gmpd_platy_tree_no_spec, gmpd_platy_no_spec[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
 
-## Find the node that corresponds to the most recent common ancestor of all Nematodes
-## which nodes in the ouchtree correspond to the Nematodes
-remove_gmpd_ouchtree@nodelabels%in%remove_gmpd_phyla_data$no_specialists_gmpd_parasite_tree.tip.label[which(remove_gmpd_phyla_data$regime=="Nematoda")] %>% which -> nematodes
-## get their lineages and find the nodes that are in common across all lineages
-remove_gmpd_ouchtree@lineages[nematodes] -> nematode_lineages
-nematode_lineages[[1]][sapply(nematode_lineages[[1]], function(n) lapply(nematode_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] #150
+## Run 3 models: BM, BMS, OUM
 
+#Acanthocephala
+gmpd_acanth_no_spec_BM_fit <- OUwie(gmpd_acanth_no_spec_regimes$phy, gmpd_acanth_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_acanth_no_spec_BMS_fit <- OUwie(gmpd_acanth_no_spec_regimes$phy, gmpd_acanth_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  #best fit
+gmpd_acanth_no_spec_OUM_fit <- OUwie(gmpd_acanth_no_spec_regimes$phy, gmpd_acanth_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
 
-## paint the regimes onto the tree
-paint(remove_gmpd_ouchtree, subtree=c("1"="Platys","150"="Nematodes","155"="Acanths"), branch=c("1"="Platys")) -> remove_gmpd_oum_regimes
-## global regime
-paint(remove_gmpd_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> remove_gmpd_ou1_regimes
+#Nematoda
+gmpd_nema_no_spec_BM_fit <- OUwie(gmpd_nema_no_spec_regimes$phy, gmpd_nema_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+gmpd_nema_no_spec_BMS_fit <- OUwie(gmpd_nema_no_spec_regimes$phy, gmpd_nema_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_nema_no_spec_OUM_fit <- OUwie(gmpd_nema_no_spec_regimes$phy, gmpd_nema_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
 
-## Plot it to make sure it looks good
-plot(remove_gmpd_ouchtree, regimes=remove_gmpd_oum_regimes)
-
-## Now do the fitting using ouch
-## OUM: AICc = 1539.4, alpha = 6.49, sigma.sq = 13662.77, Acanths = 67.7, Nematodes = 37.4, Platys = 68.2
-remove_gmpd_oum_ouch <- hansen(data=remove_gmpd_ouchdata, tree=remove_gmpd_ouchtree, regimes=remove_gmpd_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 1543.3, alpha = 4.28, sigma.sq = 10971.67, global = 55.2 
-remove_gmpd_ou1_ouch <- hansen(data=remove_gmpd_ouchdata, tree=remove_gmpd_ouchtree, regimes=remove_gmpd_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 1563.1, sigma.sq = 6256.3
-remove_gmpd_bm_ouch <- brown(data=remove_gmpd_ouchdata, tree=remove_gmpd_ouchtree)
+#Platyhelminthes
+gmpd_platy_no_spec_BM_fit <- OUwie(gmpd_platy_no_spec_regimes$phy, gmpd_platy_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best model
+gmpd_platy_no_spec_BMS_fit <- OUwie(gmpd_platy_no_spec_regimes$phy, gmpd_platy_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_platy_no_spec_OUM_fit <- OUwie(gmpd_platy_no_spec_regimes$phy, gmpd_platy_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 ```
 
 #Bootstrapping Evolutionary models for both datasets
@@ -1810,7 +1838,7 @@ names(distances)<-rownames(mam_dis2)
 distance2<-distances[names(distances) != "Homo sapiens"]
 
 #make a dataframe for the figure 
-figure_data<-data.frame("name"= gmpd_para_pubs$term, "gmpd_mpd" = gmpd_para_pubs$mpd, "distance"= distance2)
+figure_data<-data.frame("name"= names(gmpd_mam_mpd), "global.mpd" = gmpd_mam_mpd, "distance"= distance2)
 
 ##label for 
 #figure_data$color<-c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
@@ -1836,6 +1864,7 @@ summary_data$distance <- as.numeric(summary_data$distance)
 
 new_fig_data <- merge(summary_data, figure_data, by = c("global.mpd", "distance"), all.y = TRUE)
                                        
+library(ggrepel)
 
 MAM_FIG<-ggplot()+
   geom_point(new_fig_data, mapping=aes(x=global.mpd, y= distance, size = count))+
