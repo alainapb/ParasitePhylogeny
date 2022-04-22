@@ -440,10 +440,18 @@ anova(gls_host_pubs_nhosts_nearctic_no_spec, gls_host_pubs_tree_nhosts_nearctic_
 g<-gmpd_data[match(nearctic_parasite_tree$tip.label, gmpd_data$ParasiteCorrectedName),]
 
 #make Phyla dataframe (names, regimes, trait)
-nearctic_parasite_phyla_data<-data.frame(nearctic_parasite_tree$tip.label)
-nearctic_parasite_phyla_data$regime<-g$ParClass
+nearctic_parasite_phyla_data<-data.frame(species=nearctic_parasite_tree$tip.label)
 nearctic_parasite_phyla_data$trait<-nearctic_para_pubs$mpd
+library(taxize)
+## use the Class as the regime
+nearctic_parasite_phyla_data$regime <- 
+  sapply(nearctic_parasite_phyla_data$species, 
+         function(s) 
+           as.character(subset(classification(sci_id=s, db="ncbi")[[1]],rank=="class")[1]))
 nearctic_parasite_phyla_data$phyla<-g$ParPhylum
+
+
+
 
 ## Get regimes for internal nodes using corHMM
 nearctic_regimes<-corHMM(nearctic_parasite_tree, nearctic_parasite_phyla_data[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
@@ -547,9 +555,12 @@ nearctic_platy_no_spec_OUM_fit <- OUwie(platy_no_spec_regimes$phy, nearctic_plat
 k<-gmpd_data[match(gmpd_parasite_tree$tip.label, gmpd_data$ParasiteCorrectedName),]
 
 #make Phyla dataframe (names, regimes, trait)
-gmpd_phyla_data<-data.frame(gmpd_parasite_tree$tip.label)
-gmpd_phyla_data$regime<-k$ParClass
+gmpd_phyla_data<-data.frame(species=gmpd_parasite_tree$tip.label)
 gmpd_phyla_data$trait<-gmpd_para_mpd
+gmpd_phyla_data$regime <- 
+  sapply(gmpd_phyla_data$species, 
+         function(s) 
+           as.character(subset(classification(sci_id=s, db="ncbi")[[1]],rank=="class")[1]))
 gmpd_phyla_data$phyla<-k$ParPhylum
 
 ## Get regimes for internal nodes using corHMM
