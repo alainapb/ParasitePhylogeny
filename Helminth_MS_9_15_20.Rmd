@@ -434,7 +434,7 @@ anova(gls_host_pubs_nhosts_nearctic_no_spec, gls_host_pubs_tree_nhosts_nearctic_
 ```
 
 #Setting selective regimes based on Classes
-```{r OU_setup}
+```{r OU_setup, include = FALSE, eval = FALSE}
 g<-gmpd_data[match(nearctic_parasite_tree$tip.label, gmpd_data$ParasiteCorrectedName),]
 
 #make Phyla dataframe (names, regimes, trait)
@@ -466,43 +466,63 @@ gmpd_phyla_data$phyla<-k$ParPhylum
 
 saveRDS(nearctic_phyla_data, "nearctic_phyla_data.RDS")
 saveRDS(gmpd_phyla_data, "gmpd_phyla_data.RDS")
-
 ```
 
-#Neartic OU Models of MPD by Phyla
+#Neartic OU Models of the residuals of gls(mpd ~ host pubs + phy) by Phyla
 ```{r Phylum_OU_models_for_MPD, include = TRUE}
 ###NEARCTIC DATASET####
 nearctic_phyla_data <- readRDS("nearctic_phyla_data.RDS")
 
-## Get regimes for internal nodes using corHMM
-nearctic_regimes<-corHMM(nearctic_parasite_tree, nearctic_phyla_data[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+#regime data needs to includes species name, regime == Phyla, trait = the residuals of the gls(mpd ~ host pubs + phy)
+nearctic_phyla_data1<-data.frame(species = nearctic_phyla_data$species, regime = nearctic_phyla_data$phyla, trait = gls_host_pubs_tree_mpd_nearctic$residuals)
 
-#run evolution models
-nearctic_BM_fit <- OUwie(nearctic_regimes$phy, nearctic_phyla_data[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
-nearctic_BMS_fit <- OUwie(nearctic_regimes$phy, nearctic_phyla_data[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
-nearctic_OU_fit <- OUwie(nearctic_regimes$phy, nearctic_phyla_data, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
-nearctic_OUM_fit <- OUwie(nearctic_regimes$phy, nearctic_phyla_data, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+## Get regimes for internal nodes using corHMM using Phyla
+nearctic_phyla_regimes<-corHMM(nearctic_parasite_tree, nearctic_phyla_data1[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+
+#run evolution models with regimes == Class
+nearctic_phyla_BM_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  # AICc 1010
+nearctic_phyla_BMS_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 1057
+nearctic_phyla_OU_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 996
+nearctic_phyla_OUM_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 1071
 
 # Put output objects into a list to more easily summarize results
-all_nearctic <- list(nearctic_BM_fit, nearctic_BMS_fit, nearctic_OU_fit, nearctic_OUM_fit)
-names(all_nearctic) <- c("BM", "BMS", "OU1", "OUM")
+phyla_nearctic <- list(nearctic_phyla_BM_fit, nearctic_phyla_BMS_fit, nearctic_phyla_OU_fit, nearctic_phyla_OUM_fit)
+names(phyla_nearctic) <- c("BM", "BMS", "OU1", "OUM")
 # Summarize model fits
-all_nearctic_fits <- tibble(model = names(all_nearctic), k = map_dbl(all_nearctic, ~.$param.count),
-loglik = map_dbl(all_nearctic, ~.$loglik), AICc = map_dbl(all_nearctic, ~.$AICc))
-all_nearctic_fits # Print results table
+phyla_nearctic_fits <- tibble(model = names(phyla_nearctic), k = map_dbl(phyla_nearctic, ~.$param.count),
+loglik = map_dbl(phyla_nearctic, ~.$loglik), AICc = map_dbl(phyla_nearctic, ~.$AICc))
+phyla_nearctic_fits # Print results table
 
+
+########## With single host species removed ##############
+
+#regime data needs to includes species name, regime == Phyla, trait = the residuals of the gls(mpd ~ host pubs + phy)
+nearctic_phyla_data$mpd<-nearctic_para_mpd
+
+nearctic_phyla_data_no_specs<-subset(nearctic_phyla_data, mpd >0) #remove single host species
+#reorder dataframe
+nearctic_phyla_data_no_specs1<-data.frame(species = nearctic_phyla_data_no_specs$species, regime = nearctic_phyla_data_no_specs$phyla, trait = gls_host_pubs_tree_mpd_nearctic_no_spec$residuals)
+
+
+## Get regimes for internal nodes using corHMM using Phyla
+nearctic_regimes_no_specs<-corHMM(no_specialists_nearctic_parasite_tree, nearctic_phyla_data_no_specs1, model="ER", rate.cat=1, node.states = "marginal")
+
+
+```
+
+```{r OUmodels_Class_mpd_nearctic, include = FALSE}
 
 #subset the data by Phyla
-nearctic_acanth<- nearctic_phyla_data %>% filter(phyla == "Acanthocephala")
-nearctic_nema<-nearctic_phyla_data %>% filter(phyla == "Nematoda")
-nearctic_platy<-nearctic_phyla_data %>% filter(phyla == "Platyhelminthes")
+nearctic_acanth<- nearctic_phyla_data2 %>% filter(phyla == "Acanthocephala")
+nearctic_nema<-nearctic_phyla_data2 %>% filter(phyla == "Nematoda")
+nearctic_platy<-nearctic_phyla_data2 %>% filter(phyla == "Platyhelminthes")
 
 #subset the tree by Phyla
-nearctic_acanth_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_acanth$nearctic_parasite_tree.tip.label))])
+nearctic_acanth_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_acanth$species))])
 
-nearctic_nema_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_nema$nearctic_parasite_tree.tip.label))])
+nearctic_nema_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_nema$species))])
 
-nearctic_platy_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_platy$nearctic_parasite_tree.tip.label))])
+nearctic_platy_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_platy$species))])
 
 ## Phylogenetic comparative analysis analysis
 
@@ -519,14 +539,14 @@ nearctic_acanth_BMS_fit <- OUwie(acanth_regimes$phy, nearctic_acanth[,1:3], mode
 nearctic_acanth_OUM_fit <- OUwie(acanth_regimes$phy, nearctic_acanth, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 
 #Nematoda
-nearctic_nema_BM_fit <- OUwie(nema_regimes$phy, nearctic_nema[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
-nearctic_nema_BMS_fit <- OUwie(nema_regimes$phy, nearctic_nema[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
-nearctic_nema_OUM_fit <- OUwie(nema_regimes$phy, nearctic_nema, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+nearctic_nema_BM_fit <- OUwie(nema_regimes$phy, nearctic_nema[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 514.97  best model
+nearctic_nema_BMS_fit <- OUwie(nema_regimes$phy, nearctic_nema[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 577.44
+nearctic_nema_OUM_fit <- OUwie(nema_regimes$phy, nearctic_nema, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  #AICc 563.85
 
 #Platyhelminthes
-nearctic_platy_BM_fit <- OUwie(platy_regimes$phy, nearctic_platy[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best model
-nearctic_platy_BMS_fit <- OUwie(platy_regimes$phy, nearctic_platy[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
-nearctic_platy_OUM_fit <- OUwie(platy_regimes$phy, nearctic_platy, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+nearctic_platy_BM_fit <- OUwie(platy_regimes$phy, nearctic_platy[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 390.99 best model
+nearctic_platy_BMS_fit <- OUwie(platy_regimes$phy, nearctic_platy[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 463.869
+nearctic_platy_OUM_fit <- OUwie(platy_regimes$phy, nearctic_platy, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 460.40
 
 #######################################
 
@@ -538,11 +558,11 @@ nearctic_platy_no_spec<-filter(nearctic_platy, trait > 0)
 
 #subset trees to remove single host species
 
-nearctic_acanth_tree_no_spec<-drop.tip(nearctic_acanth_tree, nearctic_acanth_tree$tip.label[which(!(nearctic_acanth_tree$tip.label %in% nearctic_acanth_no_spec$nearctic_parasite_tree.tip.label))])
+nearctic_acanth_tree_no_spec<-drop.tip(nearctic_acanth_tree, nearctic_acanth_tree$tip.label[which(!(nearctic_acanth_tree$tip.label %in% nearctic_acanth_no_spec$species))])
 
-nearctic_nema_tree_no_spec<-drop.tip(nearctic_nema_tree, nearctic_nema_tree$tip.label[which(!(nearctic_nema_tree$tip.label %in% nearctic_nema_no_spec$nearctic_parasite_tree.tip.label))])
+nearctic_nema_tree_no_spec<-drop.tip(nearctic_nema_tree, nearctic_nema_tree$tip.label[which(!(nearctic_nema_tree$tip.label %in% nearctic_nema_no_spec$species))])
 
-nearctic_platy_tree_no_spec<-drop.tip(nearctic_platy_tree, nearctic_platy_tree$tip.label[which(!(nearctic_platy_tree$tip.label %in% nearctic_platy_no_spec$nearctic_parasite_tree.tip.label))])
+nearctic_platy_tree_no_spec<-drop.tip(nearctic_platy_tree, nearctic_platy_tree$tip.label[which(!(nearctic_platy_tree$tip.label %in% nearctic_platy_no_spec$species))])
 
 ## Get regimes for internal nodes using corHMM
 acanth_no_spec_regimes <- corHMM(nearctic_acanth_tree_no_spec, nearctic_acanth_no_spec[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
@@ -553,14 +573,14 @@ platy_no_spec_regimes <- corHMM(nearctic_platy_tree_no_spec, nearctic_platy_no_s
 ## Run 3 models: BM, BMS, OUM
 
 #Acanthocephala
-nearctic_acanth_no_spec_BM_fit <- OUwie(acanth_no_spec_regimes$phy, nearctic_acanth_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
-nearctic_acanth_no_spec_BMS_fit <- OUwie(acanth_no_spec_regimes$phy, nearctic_acanth_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  #best fit
-nearctic_acanth_no_spec_OUM_fit <- OUwie(acanth_no_spec_regimes$phy, nearctic_acanth_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+nearctic_acanth_no_spec_BM_fit <- OUwie(acanth_no_spec_regimes$phy, nearctic_acanth_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc Inf?
+nearctic_acanth_no_spec_BMS_fit <- OUwie(acanth_no_spec_regimes$phy, nearctic_acanth_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  #AICc 25.45 
+nearctic_acanth_no_spec_OUM_fit <- OUwie(acanth_no_spec_regimes$phy, nearctic_acanth_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 14.57 best fit
 
 #Nematoda
-nearctic_nema_no_spec_BM_fit <- OUwie(nema_no_spec_regimes$phy, nearctic_nema_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
-nearctic_nema_no_spec_BMS_fit <- OUwie(nema_no_spec_regimes$phy, nearctic_nema_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
-nearctic_nema_no_spec_OUM_fit <- OUwie(nema_no_spec_regimes$phy, nearctic_nema_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+nearctic_nema_no_spec_BM_fit <- OUwie(nema_no_spec_regimes$phy, nearctic_nema_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 91.23 
+nearctic_nema_no_spec_BMS_fit <- OUwie(nema_no_spec_regimes$phy, nearctic_nema_no_spec[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc -80.97
+nearctic_nema_no_spec_OUM_fit <- OUwie(nema_no_spec_regimes$phy, nearctic_nema_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc -18.0
 
 #Platyhelminthes
 nearctic_platy_no_spec_BM_fit <- OUwie(platy_no_spec_regimes$phy, nearctic_platy_no_spec[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best model
@@ -569,23 +589,83 @@ nearctic_platy_no_spec_OUM_fit <- OUwie(platy_no_spec_regimes$phy, nearctic_plat
 ```
 
 
-#GMPD OU Models of MPD by Phyla
+#GMPD OU Models of residuals of gls(mpd ~ host pubs + phy) by Phyla
 ```{r OUmodels_Phyla_mpd_gmpd, include = TRUE}
 gmpd_phyla_data <- readRDS("gmpd_phyla_data.RDS")
 
+#regime data needs to includes species name, regime == Phyla, trait = the residuals of the gls(mpd ~ host pubs + phy)
+gmpd_phyla_data1<-data.frame(species = gmpd_phyla_data$species, regime = gmpd_phyla_data$phyla, trait = gls_host_pubs_tree_mpd_gmpd$residuals)
 
 ## Get regimes for internal nodes using corHMM
-gmpd_regimes<-corHMM(gmpd_parasite_tree, gmpd_phyla_data[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+gmpd_phyla_regimes<-corHMM(gmpd_parasite_tree, gmpd_phyla_data1[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
 
 #run evolution models
-gmpd_BM_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)#best fit
-gmpd_BMS_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
-gmpd_OUM_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_phyla_BM_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_phyla_BMS_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_phyla_OU1_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_phyla_OUM_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+
+# Put output objects into a list to more easily summarize results
+phyla_gmpd <- list(gmpd_phyla_BM_fit, gmpd_phyla_BMS_fit, gmpd_phyla_OU1_fit, gmpd_phyla_OUM_fit)
+names(phyla_gmpd) <- c("BM", "BMS", "OU1", "OUM")
+# Summarize model fits
+phyla_gmpd_fits <- tibble(model = names(phyla_gmpd), k = map_dbl(phyla_gmpd, ~.$param.count),
+loglik = map_dbl(phyla_gmpd, ~.$loglik), AICc = map_dbl(phyla_gmpd, ~.$AICc))
+phyla_gmpd_fits # Print results table
+
+
+#regime data needs to includes species name, regime == Class, trait = the residuals of the gls(mpd ~ host pubs + phy)
+gmpd_phyla_data2<-data.frame(species = gmpd_phyla_data$species, regime = gmpd_phyla_data$regime, trait = gls_host_pubs_tree_mpd_gmpd$residuals, phyla = gmpd_phyla_data$phyla)
+
+## Get regimes for internal nodes using corHMM using Class
+gmpd_regimes<-corHMM(gmpd_parasite_tree, gmpd_phyla_data2[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+
+#run evolution models with regimes == Class
+gmpd_BM_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_BMS_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_OU_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_OUM_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+
+# Put output objects into a list to more easily summarize results
+all_gmpd <- list(gmpd_BM_fit, gmpd_BMS_fit, gmpd_OU_fit, gmpd_OUM_fit)
+names(all_gmpd) <- c("BM", "BMS", "OU1", "OUM")
+# Summarize model fits
+all_gmpd_fits <- tibble(model = names(all_gmpd), k = map_dbl(all_gmpd, ~.$param.count),
+loglik = map_dbl(all_gmpd, ~.$loglik), AICc = map_dbl(all_gmpd, ~.$AICc))
+all_gmpd_fits 
+
+############ Remove single host parasites ###############
+
+#regime data needs to includes species name, regime == Phyla, trait = the residuals of the gls(mpd ~ host pubs + phy)
+gmpd_phyla_data_no_specs<-subset(gmpd_phyla_data, trait > 0)
+gmpd_phyla_data_no_specs$trait <- gls_host_pubs_tree_mpd_gmpd_no_spec$residuals
+gmpd_phyla_data_no_specs1<-gmpd_phyla_data_no_specs[,c(1,3,2)]
+
+## Get regimes for internal nodes using corHMM
+gmpd_phyla_regimes_no_spec<-corHMM(no_specialists_gmpd_parasite_tree, gmpd_phyla_data_no_specs1[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+
+#run evolution models
+gmpd_phyla_no_spec_BM_fit <- OUwie(gmpd_phyla_regimes_no_spec$phy, gmpd_phyla_data_no_specs1[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_phyla_no_spec_BMS_fit <- OUwie(gmpd_phyla_regimes_no_spec$phy, gmpd_phyla_data_no_specs1[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_phyla_no_spec_OU1_fit <- OUwie(gmpd_phyla_regimes_no_spec$phy, gmpd_phyla_data_no_specs1, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_phyla_no_spec_OUM_fit <- OUwie(gmpd_phyla_regimes_no_spec$phy, gmpd_phyla_data_no_specs1, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+
+# Put output objects into a list to more easily summarize results
+phyla_no_spec_gmpd <- list(gmpd_phyla_no_spec_BM_fit, gmpd_phyla_no_spec_BMS_fit, gmpd_phyla_no_spec_OU1_fit, gmpd_phyla_no_spec_OUM_fit)
+names(phyla_no_spec_gmpd) <- c("BM", "BMS", "OU1", "OUM")
+# Summarize model fits
+phyla_no_spec_gmpd_fits <- tibble(model = names(phyla_no_spec_gmpd), k = map_dbl(phyla_no_spec_gmpd, ~.$param.count),
+loglik = map_dbl(phyla_no_spec_gmpd, ~.$loglik), AICc = map_dbl(phyla_no_spec_gmpd, ~.$AICc))
+phyla_no_spec_gmpd_fits # Print results table
+
+```
+
+```{r OUmodels_Class_gmpd, include = FALSE}
 
 #subset the data by Phyla
-gmpd_acanth<- gmpd_phyla_data %>% filter(phyla == "Acanthocephala")
-gmpd_nema<-gmpd_phyla_data %>% filter(phyla == "Nematoda")
-gmpd_platy<-gmpd_phyla_data %>% filter(phyla == "Platyhelminthes")
+gmpd_acanth<- gmpd_phyla_data2 %>% filter(phyla == "Acanthocephala")
+gmpd_nema<-gmpd_phyla_data2 %>% filter(phyla == "Nematoda")
+gmpd_platy<-gmpd_phyla_data2 %>% filter(phyla == "Platyhelminthes")
 
 #subset the tree by Phyla
 gmpd_acanth_tree<-drop.tip(gmpd_parasite_tree, gmpd_parasite_tree$tip.label[which(!(gmpd_parasite_tree$tip.label %in% gmpd_acanth$gmpd_parasite_tree.tip.label))])
@@ -656,10 +736,50 @@ gmpd_platy_no_spec_BMS_fit <- OUwie(gmpd_platy_no_spec_regimes$phy, gmpd_platy_n
 gmpd_platy_no_spec_OUM_fit <- OUwie(gmpd_platy_no_spec_regimes$phy, gmpd_platy_no_spec, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 ```
 
+
 #Bootstrapping Evolutionary models for both datasets
 ```{r bootstrap_ouch_results, eval=FALSE, echo=FALSE}
 
-## BOOTSTRAP ANALYSIS OF NEARCTIC DATA
+## BOOTSTRAP ANALYSIS 
+
+#Brownian Motion
+gmpd_BM_boots <- OUwie.boot(gmpd_regimes$phy, 
+                         gmpd_phyla_data2[,c(1:2)],  
+                         model="BM1", nboot=1000, 
+                         alpha = gmpd_BM_fit$solution[1,], 
+                         sigma.sq = gmpd_BM_fit$solution[2,], 
+                         theta = gmpd_BM_fit$theta[,1], 
+                         theta0 = gmpd_BM_fit$theta[1,1],
+                         root.station = FALSE)
+
+nearctic_BM_boots <- OUwie.boot(nearctic_regimes$phy,
+                             nearctic_phyla_data2[,c(1:2)],  
+                             model="BM1", nboot=1000, 
+                             alpha =  nearctic_BM_fit$solution[1,], 
+                             sigma.sq = nearctic_BM_fit$solution[2,], 
+                             theta = nearctic_BM_fit$theta[,1], 
+                             theta0 = nearctic_BM_fit$theta[1,1],
+                             root.station = FALSE)
+
+#OU1
+gmpd_OU_boots <- OUwie.boot(gmpd_regimes$phy, 
+                         gmpd_phyla_data2[,1:2],  
+                         model="OU1", nboot=1000, 
+                         alpha = gmpd_OU_fit$solution[1,], 
+                         sigma.sq = gmpd_OU_fit$solution[2,], 
+                         theta = gmpd_OU_fit$theta[,1], 
+                         theta0 = gmpd_OU_fit$theta[1,1],
+                         root.station = FALSE)
+
+nearctic_OU_boots <- OUwie.boot(nearctic_regimes$phy,
+                             nearctic_phyla_data2[,1:2],  
+                             model="OU1", nboot=1000, 
+                             alpha =  nearctic_OU_fit$solution[1,], 
+                             sigma.sq = nearctic_OU_fit$solution[2,], 
+                             theta = nearctic_OU_fit$theta[,1], 
+                             theta0 = nearctic_OU_fit$theta[1,1],
+                             root.station = FALSE)
+
 ## Simulate 1000 datasets using either the OUM, OU1 or the BM model, and then re-fit either the true data-generating model or the other model
 nearctic_oum_datasets <- simulate(nearctic_oum_ouch, nsim=1000, seed=12983)
 nearctic_ou1_datasets <- simulate(nearctic_ou1_ouch, nsim=1000, seed=12983)
@@ -1480,7 +1600,7 @@ nearctic_pgls_no_spec <- drop.tip(no_specialists_nearctic_parasite_tree, no_spec
 nearctic_b_size_no_spec <- b.size[match(nearctic_pgls_no_spec$tip.label, b.size$Parasite.species),]
 
 
-##global mpd, single host = 0 
+##gmpd mpd, single host = 0 
 setdiff(gmpd_parasite_tree$tip.label, b.size$Parasite.species)->no_body_size2 
 gmpd_pgls <- drop.tip(gmpd_parasite_tree, gmpd_parasite_tree$tip.label[which(gmpd_parasite_tree$tip.label%in%no_body_size2)])
 
@@ -1493,6 +1613,7 @@ gmpd_pgls_no_spec <- drop.tip(no_specialists_gmpd_parasite_tree, no_specialists_
 
 # make sure body size is in the same order as the parasite phylogeny
 gmpd_b_size_no_spec <- b.size[match(no_specialists_gmpd_parasite_tree$tip.label, b.size$Parasite.species),]
+gmpd_b_size_no_spec<-subset(gmpd_b_size_no_spec, ratio != "NaN")
 
 
 
@@ -1584,7 +1705,8 @@ nearctic_transmission<-nearctic_transmission[match(nearctic_parasite_tree$tip.la
 #### All species ####
 
 dat<-data.frame(taxa=nearctic_parasite_tree$tip.label,
-                para.mpd=nearctic_para_pubs$mpd,              #mpd
+                para.mpd= nearctic_para_pubs$mpd,
+                res = gls_host_pubs_tree_mpd_nearctic$residuals, #residuals of mpd
                 para_pubs=log(nearctic_para_pubs$pubs),
                 host_pubs=log(nearctic_para_pubs$hostPubSum),
                 close=as.factor(nearctic_transmission$close),
@@ -1594,30 +1716,20 @@ dat<-data.frame(taxa=nearctic_parasite_tree$tip.label,
 nearctic_parasite_tree$node.label<-NULL
 cdat<-comparative.data(data=dat, phy=nearctic_parasite_tree, names.col = "taxa")
 
-summary(pgls(para.mpd ~ para_pubs + close + env + intermediate, cdat, lambda = "ML"))
-anova(pgls(para.mpd ~ para_pubs + close + env + intermediate, cdat, lambda = "ML"))
-plot(pgls(para.mpd ~ para_pubs + close + env + intermediate, cdat, lambda = "ML"))
+summary(pgls(res ~  close + env + intermediate, cdat, lambda = "ML"))
+anova(pgls(res ~  close + env + intermediate, cdat, lambda = "ML"))
 
-summary(pgls(para.mpd ~ host_pubs + close + env + intermediate, cdat, lambda = "ML"))
-anova(pgls(para.mpd ~ host_pubs + close + env + intermediate, cdat, lambda = "ML"))
-plot(pgls(para.mpd ~ host_pubs + close + env + intermediate, cdat, lambda = "ML"))
 
 #### Dataset that includes parasite traits (length), subsets to 33 species ####
+
 #create pgls data from nearctic_para_mpd
-pgls_nearctic_para_mpd<-nearctic_para_pubs[match(nearctic_pgls$tip.label, nearctic_para_pubs$term),]
+nearctic_dat<-dat[match(nearctic_pgls$tip.label, dat$taxa),]
 
 #create pgls dataset 
-nearctic_dat<-data.frame(taxa=nearctic_pgls$tip.label,
-                para.mpd=pgls_nearctic_para_mpd$mpd,              #mpd
-                para.pubs=log(pgls_nearctic_para_mpd$pubs),
-                host.pubs=log(pgls_nearctic_para_mpd$hostPubSum),
-                para.l=nearctic_b_size$mean_l,                #parasite length
-                para.w=nearctic_b_size$mean_w,                #parasite width
-                para.b=nearctic_b_size$ratio,                 #parasite l/w ratio
-                close=as.factor(nearctic_trans$close),
-                nonclose=as.factor(nearctic_trans$nonclose),
-                intermediate=as.factor(nearctic_trans$intermediate),
-                host_mass=nearctic_traits$avgMass)
+nearctic_dat$para.l=nearctic_b_size$mean_l#parasite length
+nearctic_dat$para.w=nearctic_b_size$mean_w                #parasite width
+nearctic_dat$para.b=nearctic_b_size$ratio                 #parasite l/w ratio
+nearctic_dat$host_mass=nearctic_traits$avgMass
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
 nearctic_pgls$node.label<-NULL
@@ -1627,14 +1739,9 @@ print(nearctic_cdat)
 ## model testing ##
 
 #all predictors
-nearctic_para_mod <- pgls(para.mpd ~ para.pubs + close + nonclose + intermediate + para.l + host_mass, nearctic_cdat, lambda = "ML")
-summary(nearctic_para_mod)
-anova(nearctic_para_mod)
-
-nearctic_host_mod <- pgls(para.mpd ~ host.pubs + close + nonclose + intermediate + para.l + host_mass, nearctic_cdat, lambda = "ML")
-summary(nearctic_host_mod)
-anova(nearctic_host_mod)
-
+nearctic_mod <- pgls(res ~ close + env + intermediate + para.b + host_mass, nearctic_cdat, lambda = "ML")
+summary(nearctic_mod)
+anova(nearctic_mod)
 ```
 
 ```{r pgls_nearctic_shR, include=FALSE}
@@ -1642,67 +1749,34 @@ anova(nearctic_host_mod)
 
 ##with single host species removed
 
-# prepare transmission data
-nearctic_transmission_no_spec<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% no_specialists_nearctic_parasite_tree$tip.label),]
-nearctic_transmission_no_spec<-nearctic_transmission_no_spec[match(no_specialists_nearctic_parasite_tree$tip.label, nearctic_transmission_no_spec$CorrectName),]
-
-#prepare mpd and sampling bias data
-nearctic_para_pubs_no_spec<-nearctic_para_pubs[which(nearctic_para_pubs$term %in% no_specialists_nearctic_parasite_tree$tip.label),]
-nearctic_para_pubs_no_spec<-nearctic_para_pubs_no_spec[match(no_specialists_nearctic_parasite_tree$tip.label, nearctic_para_pubs_no_spec$term),]
-
 #### All species ####
+nearctic_dat_no_spec<-subset(dat, para.mpd > 0)
+#replace res with the residuals from the no specialists gls model
+nearctic_dat_no_spec$res<-gls_host_pubs_tree_mpd_nearctic_no_spec$residuals
 
-nearctic_dat<-data.frame(taxa=no_specialists_nearctic_parasite_tree$tip.label,
-                para.mpd=nearctic_para_pubs_no_spec$mpd,              #mpd
-                para.pubs=log(nearctic_para_pubs_no_spec$pubs),
-                host.pubs=nearctic_para_pubs_no_spec$hostPubSum,
-                close=as.factor(remove_nearctic_transmission$close),
-                env=as.factor(remove_nearctic_transmission$nonclose),
-                intermediate=as.factor(remove_nearctic_transmission$intermediate))
+nearctic_cdat_no_spec<-comparative.data(data=nearctic_dat_no_spec, phy=no_specialists_nearctic_parasite_tree, names.col = "taxa")
 
-nearctic_cdat<-comparative.data(data=nearctic_dat, phy=no_specialists_nearctic_parasite_tree, names.col = "taxa")
-
-summary(pgls(para.mpd ~ para.pubs + close + env + intermediate, nearctic_cdat, lambda = "ML"))
-anova(pgls(para.mpd ~ para.pubs + close + env + intermediate, nearctic_cdat, lambda = "ML"))
-
-summary(pgls(para.mpd ~ host.pubs + close + env + intermediate, nearctic_cdat, lambda = "ML")) #does not run when host.pubs is logged
-anova(pgls(para.mpd ~ host.pubs + close + env + intermediate, nearctic_cdat, lambda = "ML"))
+summary(pgls(res ~  close + env + intermediate, nearctic_cdat_no_spec, lambda = "ML")) #NS
+anova(pgls(res ~ close + env + intermediate, nearctic_cdat_no_spec, lambda = "ML")) #NS
 
 
 #### Dataset that includes parasite and host traits, species ####
+nearctic_all_dat_no_spec<-nearctic_dat_no_spec[match(nearctic_trans_no_spec$CorrectName, nearctic_dat_no_spec$taxa)]
 
-nearctic_para_pubs_pgls_no_spec<-nearctic_para_pubs_no_spec[which(nearctic_para_pubs_no_spec$term %in% nearctic_pgls_no_spec$tip.label),]
-nearctic_para_pubs_pgls_no_spec<-nearctic_para_pubs_no_spec[match(nearctic_pgls_no_spec$tip.label, nearctic_para_pubs_pgls_no_spec$term),]
-
-nearctic_dat_no_spec<-data.frame(taxa=nearctic_pgls_no_spec$tip.label,
-                para.mpd=nearctic_para_pubs_pgls_no_spec$mpd,
-                para.pubs=log(nearctic_para_pubs_pgls_no_spec$pubs),
-                host.pubs=log(nearctic_para_pubs_pgls_no_spec$hostPubSum),
-                para.l=nearctic_b_size_no_spec$mean_l,
-                para.w=nearctic_b_size_no_spec$mean_w,
-                para.b=nearctic_b_size_no_spec$ratio,
-                close=as.factor(nearctic_trans_no_spec$close),
-                nonclose=as.factor(nearctic_trans_no_spec$nonclose),
-                intermediate=as.factor(nearctic_trans_no_spec$intermediate),
-                host_mass=nearctic_traits_no_spec$avgMass)
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
-nearctic_no_spec_cdat<-comparative.data(data=nearctic_dat_no_spec, phy=nearctic_pgls_no_spec, names.col = "taxa")
-print(nearctic_no_spec_cdat)
+nearctic_all_no_spec_cdat<-comparative.data(data=nearctic_all_dat_no_spec, phy=nearctic_pgls_no_spec, names.col = "taxa")
+print(nearctic_all_no_spec_cdat)
 
 ## model testing ##
 
 #all predictors 
-summary(pgls(para.mpd~ para.pubs + close + nonclose + intermediate +para.l + host_mass,nearctic_no_spec_cdat, lambda = "ML"))
-anova(pgls(para.mpd~ para.pubs + close + nonclose + intermediate +para.l + host_mass,nearctic_no_spec_cdat, lambda = "ML"))
-
-summary(pgls(para.mpd~ host.pubs + close + nonclose + intermediate +para.l + host_mass,nearctic_no_spec_cdat, lambda = "ML"))
-anova(pgls(para.mpd~ host.pubs + close + nonclose + intermediate +para.l + host_mass,nearctic_no_spec_cdat, lambda = "ML"))
-
+summary(pgls(res ~  close + env + intermediate + para.b + host_mass, nearctic_all_no_spec_cdat, lambda = "ML")) #NS
+anova(pgls(res ~ close + env + intermediate + para.b + host_mass, nearctic_all_no_spec_cdat, lambda = "ML")) #NS
 ```
 
 #PGLS of GMPD
-```{r pgls_global_sh0, include=FALSE}
+```{r pgls_gmpd_sh0, include=FALSE}
 
 ##with single host species MPD = 0
 
@@ -1712,7 +1786,8 @@ gmpd_transmission<-gmpd_transmission[match(gmpd_parasite_tree$tip.label, gmpd_tr
 
 #### All species ####
 gmpd_dat<-data.frame(taxa=gmpd_parasite_tree$tip.label,
-                para.mpd=gmpd_para_pubs$mpd,              #mpd
+                para.mpd= gmpd_para_pubs$mpd,
+                res = gls_host_pubs_tree_mpd_gmpd$residuals,              
                 para.pubs=log(gmpd_para_pubs$pubs), 
                 host.pubs=log(gmpd_para_pubs$hostPubSum),
                 close=as.factor(gmpd_transmission$close),
@@ -1721,26 +1796,18 @@ gmpd_dat<-data.frame(taxa=gmpd_parasite_tree$tip.label,
 
 gmpd_cdat<-comparative.data(data=gmpd_dat, phy=gmpd_parasite_tree, names.col = "taxa")
 
-summary(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_cdat, lambda = "ML"))
-anova(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_cdat, lambda = "ML"))  #Environmental transmission p= 0.02
-
+summary(pgls(res ~  close + env + intermediate, gmpd_cdat, lambda = "ML"))
+anova(pgls(res ~ close + env + intermediate, gmpd_cdat, lambda = "ML"))  
 
 #### Dataset that includes parasite and host traits , species ####
 
 #create pgls data from gmpd_para_mpd
-pgls_gmpd_para_pubs<-gmpd_para_pubs[match(gmpd_pgls$tip.label, gmpd_para_pubs$term),]
+gmpd_trait_dat<-gmpd_dat[match(gmpd_pgls$tip.label, gmpd_dat$taxa),]
 
-gmpd_trait_dat<-data.frame(taxa=gmpd_pgls$tip.label,
-                para.mpd=pgls_gmpd_para_pubs$mpd,
-                para.pubs=log(pgls_gmpd_para_pubs$pubs),
-                host.pubs=log(pgls_gmpd_para_pubs$hostPubSum),
-                para.l=gmpd_b_size$mean_l,
-                para.w=gmpd_b_size$mean_w,
-                para.b=gmpd_b_size$ratio,
-                close=as.factor(gmpd_trans$close),
-                nonclose=as.factor(gmpd_trans$nonclose),
-                intermediate=as.factor(gmpd_trans$intermediate),
-                host_mass=gmpd_traits$avgMass)
+gmpd_trait_dat$para.l=gmpd_b_size$mean_l
+gmpd_trait_dat$para.w=gmpd_b_size$mean_w
+gmpd_trait_dat$para.b=gmpd_b_size$ratio
+gmpd_trait_dat$host_mass=gmpd_traits$avgMass
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
 gmpd_trait_cdat<-comparative.data(data=gmpd_trait_dat, phy=gmpd_pgls, names.col = "taxa")
@@ -1749,76 +1816,55 @@ print(gmpd_cdat)
 ## model testing ##
 
 #all predictors
-summary(pgls(para.mpd~ para.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_trait_cdat, lambda = "ML"))
-anova(pgls(para.mpd~ para.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_trait_cdat, lambda = "ML"))
-
-summary(pgls(para.mpd~ host.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_trait_cdat, lambda = "ML"))
-anova(pgls(para.mpd~ host.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_trait_cdat, lambda = "ML")) #parasite length p = 0.02
+summary(pgls(res ~ close + env + intermediate + para.b + host_mass, gmpd_trait_cdat, lambda = "ML"))
+anova(pgls(res ~ close + env + intermediate + para.b + host_mass, gmpd_trait_cdat, lambda = "ML"))
 ```
 
 
-```{r pgls_global_shR, include = FALSE}
+```{r pgls_gmpd_shR, include = FALSE}
 ##with single host species removed
 
-# prepare transmission data
-gmpd_transmission_no_spec<-gmpd_parasite_data[which(gmpd_parasite_data$CorrectName %in% no_specialists_gmpd_parasite_tree$tip.label),]
-gmpd_transmission_no_spec<-gmpd_transmission_no_spec[match(no_specialists_gmpd_parasite_tree$tip.label, gmpd_transmission_no_spec$CorrectName),]
-
-#prepare mpd and sampling bias data
-gmpd_para_pubs_no_spec<-gmpd_para_pubs[which(gmpd_para_pubs$term %in% no_specialists_gmpd_parasite_tree$tip.label),]
-gmpd_para_pubs_no_spec<-gmpd_para_pubs_no_spec[match(no_specialists_gmpd_parasite_tree$tip.label, gmpd_para_pubs_no_spec$term),]
+gmpd_no_spec_dat<-subset(gmpd_dat, para.mpd > 0)
+#replace res with the resiudals from the no specialists model
+gmpd_no_spec_dat$res<-gls_host_pubs_tree_mpd_gmpd_no_spec$residuals
+#remove the empty transmission rows
+gmpd_no_spec_dat<-subset(gmpd_no_spec_dat, close != "NA")
 
 #### All species (144) ####
-
-gmpd_no_spec_dat<-data.frame(taxa=no_specialists_gmpd_parasite_tree$tip.label,
-                para.mpd=gmpd_para_pubs_no_spec$mpd,              #mpd
-                para.pubs=log(gmpd_para_pubs_no_spec$pubs),
-                host.pubs=log(gmpd_para_pubs_no_spec$hostPubSum),
-                close=as.factor(gmpd_transmission_no_spec$close),
-                env=as.factor(gmpd_transmission_no_spec$nonclose),
-                intermediate=as.factor(gmpd_transmission_no_spec$intermediate))
 
 gmpd_no_spec_cdat<-comparative.data(data=gmpd_no_spec_dat, phy=no_specialists_gmpd_parasite_tree, names.col = "taxa")
 print(gmpd_no_spec_cdat)
 
-
-summary(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_no_spec_cdat, lambda = "ML"))
-anova(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_no_spec_cdat, lambda = "ML")) #close and environmental transmission p < 0.05
-plot(pgls(para.mpd ~ para.pubs + close + env + intermediate, gmpd_no_spec_cdat, lambda = "ML"))
-
+summary(pgls(res ~  close + env + intermediate, gmpd_no_spec_cdat, lambda = "ML"))
+anova(pgls(res ~ close + env + intermediate, gmpd_no_spec_cdat, lambda = "ML"))
 
 #### Dataset that includes parasite and host traits, 42 species ####
+gmpd_traits_no_spec_dat<-gmpd_no_spec_dat[match(gmpd_b_size_no_spec$Parasite.species, gmpd_no_spec_dat$taxa),]
+gmpd_traits_no_spec_dat<-subset(gmpd_traits_no_spec_dat, taxa != "NA")
 
-gmpd_para_pubs_pgls_no_spec<-gmpd_para_pubs_no_spec[which(gmpd_para_pubs_no_spec$term %in% gmpd_pgls_no_spec$tip.label),]
-gmpd_para_pubs_pgls_no_spec<-gmpd_para_pubs_no_spec[match(gmpd_pgls_no_spec$tip.label, gmpd_para_pubs_pgls_no_spec$term),]
+#match body size data to gmpd_traits_no_spec_dat
+gmpd_b_size_no_spec1<-gmpd_b_size_no_spec[match(gmpd_traits_no_spec_dat$taxa, gmpd_b_size_no_spec$Parasite.species),]
 
-gmpd_b_size_pgls_no_spec<-gmpd_b_size_no_spec[which(gmpd_b_size_no_spec$Parasite.species %in% gmpd_pgls_no_spec$tip.label),]
-gmpd_b_size_pgls_no_spec<-gmpd_b_size_no_spec[match(gmpd_pgls_no_spec$tip.label, gmpd_b_size_pgls_no_spec$Parasite.species),]
+#add parasite trait data
+gmpd_traits_no_spec_dat$para.l=gmpd_b_size_no_spec1$mean_l
+gmpd_traits_no_spec_dat$para.w=gmpd_b_size_no_spec1$mean_w
+gmpd_traits_no_spec_dat$para.b=gmpd_b_size_no_spec1$ratio
 
-gmpd_traits_no_spec_dat<-data.frame(taxa=gmpd_pgls_no_spec$tip.label,
-                para.mpd=gmpd_para_pubs_pgls_no_spec$mpd,
-                para.pubs=log(gmpd_para_pubs_pgls_no_spec$pubs),
-                host.pubs=log(gmpd_para_pubs_pgls_no_spec$hostPubSum),
-                para.l=gmpd_b_size_pgls_no_spec$mean_l,
-                para.w=gmpd_b_size_pgls_no_spec$mean_w,
-                para.b=gmpd_b_size_pgls_no_spec$ratio,
-                close=as.factor(gmpd_trans_no_spec$close),
-                nonclose=as.factor(gmpd_trans_no_spec$nonclose),
-                intermediate=as.factor(gmpd_trans_no_spec$intermediate),
-                host_mass=gmpd_traits_no_spec$avgMass)
+#match host dat to gmpd_traits_no_spec_dat
+gmpd_host_traits_no_spec<-gmpd_traits_no_spec[match(gmpd_traits_no_spec_dat$taxa, gmpd_traits_no_spec_dat$taxa),]
+#add host data
+gmpd_traits_no_spec_dat$host_mass<-gmpd_host_traits_no_spec$host_mass
 
 ## constructs the data.frame of the taxa names and data in the order of the tree tips
 gmpd_traits_no_spec_cdat<-comparative.data(data=gmpd_traits_no_spec_dat, phy=gmpd_pgls_no_spec, names.col = "taxa")
 print(gmpd_traits_no_spec_cdat)
 
+
 ## model testing ##
-
 #all predictors
-summary(pgls(para.mpd~ para.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
-anova(pgls(para.mpd~ para.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
+summary(pgls(res ~ close + env + intermediate + para.b + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
+anova(pgls(res ~ close + env + intermediate + para.b + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
 
-summary(pgls(para.mpd~ host.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
-anova(pgls(para.mpd~ host.pubs + close + nonclose + intermediate + para.l + host_mass, gmpd_traits_no_spec_cdat, lambda = "ML"))
 ```
 
 
