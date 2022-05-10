@@ -745,42 +745,24 @@ gmpd_platy_no_spec_OUM_fit <- OUwie(gmpd_platy_no_spec_regimes$phy, gmpd_platy_n
 ## BOOTSTRAP ANALYSIS 
 
 #Brownian Motion
-gmpd_BM_boots <- OUwie.boot(gmpd_regimes$phy, 
-                         gmpd_phyla_data2[,c(1:2)],  
+gmpd_BM_boots <- OUwie.boot(gmpd_phyla_regimes$phy, 
+                         gmpd_phyla_data1[,c(1:3)],  
                          model="BM1", nboot=1000, 
-                         alpha = gmpd_BM_fit$solution[1,], 
-                         sigma.sq = gmpd_BM_fit$solution[2,], 
-                         theta = gmpd_BM_fit$theta[,1], 
-                         theta0 = gmpd_BM_fit$theta[1,1],
+                         alpha = gmpd_phyla_BM_fit$solution[1,], 
+                         sigma.sq = gmpd_phyla_BM_fit$solution[2,], 
+                         theta = gmpd_phyla_BM_fit$theta[,1], 
+                         theta0 = gmpd_phyla_BM_fit$theta[1,1],
                          root.station = FALSE)
 
-nearctic_BM_boots <- OUwie.boot(nearctic_regimes$phy,
-                             nearctic_phyla_data2[,c(1:2)],  
+nearctic_BM_boots <- OUwie.boot(nearctic_phyla_regimes$phy,
+                             nearctic_phyla_data1[,c(1:3)],  
                              model="BM1", nboot=1000, 
-                             alpha =  nearctic_BM_fit$solution[1,], 
-                             sigma.sq = nearctic_BM_fit$solution[2,], 
-                             theta = nearctic_BM_fit$theta[,1], 
-                             theta0 = nearctic_BM_fit$theta[1,1],
+                             alpha =  nearctic_phyla_BM_fit$solution[1,], 
+                             sigma.sq = nearctic_phyla_BM_fit$solution[2,], 
+                             theta = nearctic_phyla_BM_fit$theta[,1], 
+                             theta0 = nearctic_phyla_BM_fit$theta[1,1],
                              root.station = FALSE)
 
-#OU1
-gmpd_OU_boots <- OUwie.boot(gmpd_regimes$phy, 
-                         gmpd_phyla_data2[,1:2],  
-                         model="OU1", nboot=1000, 
-                         alpha = gmpd_OU_fit$solution[1,], 
-                         sigma.sq = gmpd_OU_fit$solution[2,], 
-                         theta = gmpd_OU_fit$theta[,1], 
-                         theta0 = gmpd_OU_fit$theta[1,1],
-                         root.station = FALSE)
-
-nearctic_OU_boots <- OUwie.boot(nearctic_regimes$phy,
-                             nearctic_phyla_data2[,1:2],  
-                             model="OU1", nboot=1000, 
-                             alpha =  nearctic_OU_fit$solution[1,], 
-                             sigma.sq = nearctic_OU_fit$solution[2,], 
-                             theta = nearctic_OU_fit$theta[,1], 
-                             theta0 = nearctic_OU_fit$theta[1,1],
-                             root.station = FALSE)
 
 ## Simulate 1000 datasets using either the OUM, OU1 or the BM model, and then re-fit either the true data-generating model or the other model
 nearctic_oum_datasets <- simulate(nearctic_oum_ouch, nsim=1000, seed=12983)
