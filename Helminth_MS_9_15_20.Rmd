@@ -476,16 +476,23 @@ saveRDS(gmpd_phyla_data, "gmpd_phyla_data.RDS")
 nearctic_phyla_data <- readRDS("nearctic_phyla_data.RDS")
 
 #regime data needs to includes species name, regime == Phyla, trait = the residuals of the gls(mpd ~ host pubs + phy)
-nearctic_phyla_data1<-data.frame(species = nearctic_phyla_data$species, regime = nearctic_phyla_data$phyla, trait = gls_host_pubs_tree_mpd_nearctic$residuals)
+nearctic_phyla_data1<-data.frame(species = nearctic_phyla_data$species, regime = nearctic_phyla_data$phyla, trait = gls_host_pubs_mpd_nearctic$residuals)
 
 ## Get regimes for internal nodes using corHMM using Phyla
-nearctic_phyla_regimes<-corHMM(nearctic_parasite_tree, nearctic_phyla_data1[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
+nearctic_phyla_regimes<-corHMM(nearctic_parasite_tree, nearctic_phyla_data1[,c(1,2)], model="ER", rate.cat=1, node.states = "marginal")
 
-#run evolution models with regimes == Class
-nearctic_phyla_BM_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  # AICc 1010
-nearctic_phyla_BMS_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 1057
-nearctic_phyla_OU_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 996
-nearctic_phyla_OUM_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 1071
+## rename the internal nodes to match the tip regime names
+sapply(nearctic_phyla_regimes$phy$node.label, function(n)
+  switch(as.character(n),                                                    
+         "1"=levels(as.factor(nearctic_phyla_data1$regime))[1], 
+         "2"=levels(as.factor(nearctic_phyla_data1$regime))[2],
+         "3"=levels(as.factor(nearctic_phyla_data1$regime))[3])) -> nearctic_phyla_regimes$phy$node.label
+
+#run evolution models with regimes == Phylum
+nearctic_phyla_BM_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  
+nearctic_phyla_BMS_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+nearctic_phyla_OU_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+nearctic_phyla_OUM_fit <- OUwie(nearctic_phyla_regimes$phy, nearctic_phyla_data1, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
 
 # Put output objects into a list to more easily summarize results
 phyla_nearctic <- list(nearctic_phyla_BM_fit, nearctic_phyla_BMS_fit, nearctic_phyla_OU_fit, nearctic_phyla_OUM_fit)
@@ -503,21 +510,49 @@ nearctic_phyla_data$mpd<-nearctic_para_mpd
 
 nearctic_phyla_data_no_specs<-subset(nearctic_phyla_data, mpd >0) #remove single host species
 #reorder dataframe
-nearctic_phyla_data_no_specs1<-data.frame(species = nearctic_phyla_data_no_specs$species, regime = nearctic_phyla_data_no_specs$phyla, trait = gls_host_pubs_tree_mpd_nearctic_no_spec$residuals)
+nearctic_phyla_data_no_specs1<-data.frame(species = nearctic_phyla_data_no_specs$species, regime = nearctic_phyla_data_no_specs$phyla, trait = gls_host_pubs_mpd_nearctic_no_spec$residuals)
 
 
 ## Get regimes for internal nodes using corHMM using Phyla
-nearctic_regimes_no_specs<-corHMM(no_specialists_nearctic_parasite_tree, nearctic_phyla_data_no_specs1, model="ER", rate.cat=1, node.states = "marginal")
+nearctic_regimes_no_specs<-corHMM(no_specialists_nearctic_parasite_tree, nearctic_phyla_data_no_specs1[,c(1,2)], model="ER", rate.cat=1, node.states = "marginal")
+
+sapply(nearctic_regimes_no_specs$phy$node.label, function(n)
+  switch(as.character(n),                                                    
+         "1"=levels(as.factor(nearctic_phyla_data_no_specs1$regime))[1], 
+         "2"=levels(as.factor(nearctic_phyla_data_no_specs1$regime))[2],
+         "3"=levels(as.factor(nearctic_phyla_data_no_specs1$regime))[3])) -> nearctic_regimes_no_specs$phy$node.label
+
+## run evolution models with regimes == Phylum
+nearctic_no_specs_phyla_BM_fit <- OUwie(nearctic_regimes_no_specs$phy, nearctic_phyla_data_no_specs1, model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+nearctic_no_specs_phyla_BMS_fit <- OUwie(nearctic_regimes_no_specs$phy, nearctic_phyla_data_no_specs1, model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+nearctic_no_specs_phyla_OU_fit <- OUwie(nearctic_regimes_no_specs$phy, nearctic_phyla_data_no_specs1, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+nearctic_no_specs_phyla_OUM_fit <- OUwie(nearctic_regimes_no_specs$phy, nearctic_phyla_data_no_specs1, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+
+phyla_nearctic <- list(nearctic_no_specs_phyla_BM_fit, nearctic_no_specs_phyla_BMS_fit, nearctic_no_specs_phyla_OU_fit, nearctic_no_specs_phyla_OUM_fit)
+names(phyla_nearctic) <- c("BM", "BMS", "OU1", "OUM")
+# Summarize model fits
+no_specs_phyla_nearctic_fits <- tibble(model = names(phyla_nearctic), k = map_dbl(phyla_nearctic, ~.$param.count),
+loglik = map_dbl(phyla_nearctic, ~.$loglik), AICc = map_dbl(phyla_nearctic, ~.$AICc))
+no_specs_phyla_nearctic_fits # Print results table
+
+
+
+### NOTE FROM CLAY:
+## These results suggest that BMS is a much better fit than OUM. That suggests that if we subsetted the tree to look at each phylum separately, for each a BM model would be better than OU1. Is that true?
+
 
 
 ```
 
 ```{r OUmodels_Class_mpd_nearctic, include = FALSE}
-
+## reload the phyla and class data
+nearctic_phyla_data <- readRDS("nearctic_phyla_data.RDS")
+## add trait = the residuals of the gls(mpd ~ host pubs) model
+nearctic_phyla_data$trait <- gls_host_pubs_mpd_nearctic$residuals
 #subset the data by Phyla
-nearctic_acanth<- nearctic_phyla_data2 %>% filter(phyla == "Acanthocephala")
-nearctic_nema<-nearctic_phyla_data2 %>% filter(phyla == "Nematoda")
-nearctic_platy<-nearctic_phyla_data2 %>% filter(phyla == "Platyhelminthes")
+nearctic_acanth<- nearctic_phyla_data %>% filter(phyla == "Acanthocephala")
+nearctic_nema<-nearctic_phyla_data %>% filter(phyla == "Nematoda")
+nearctic_platy<-nearctic_phyla_data %>% filter(phyla == "Platyhelminthes")
 
 #subset the tree by Phyla
 nearctic_acanth_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip.label[which(!(nearctic_parasite_tree$tip.label %in% nearctic_acanth$species))])
@@ -528,30 +563,50 @@ nearctic_platy_tree<-drop.tip(nearctic_parasite_tree, nearctic_parasite_tree$tip
 
 ## Phylogenetic comparative analysis analysis
 
-## Get regimes for internal nodes using corHMM
-acanth_regimes <- corHMM(nearctic_acanth_tree, nearctic_acanth[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
-nema_regimes <- corHMM(nearctic_nema_tree, nearctic_nema[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
-platy_regimes <- corHMM(nearctic_platy_tree, nearctic_platy[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
-
-## Run 3 models: BM, BMS, OUM
+## Set regimes for internal nodes using corHMM with Class as the regime determinant
 
 #Acanthocephala
-nearctic_acanth_BM_fit <- OUwie(acanth_regimes$phy, nearctic_acanth[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
-nearctic_acanth_BMS_fit <- OUwie(acanth_regimes$phy, nearctic_acanth[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
-nearctic_acanth_OUM_fit <- OUwie(acanth_regimes$phy, nearctic_acanth, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+## Set regimes based on Classes
+acanth_regimes <- corHMM(nearctic_acanth_tree, nearctic_acanth[,c(1,2)], model="ER", rate.cat=1, node.states = "marginal")
+## Fix the internal node regime names
+sapply(acanth_regimes$phy$node.label, function(n)
+  switch(as.character(n),                                                    
+         "1"=levels(as.factor(nearctic_acanth$regime))[1], 
+         "2"=levels(as.factor(nearctic_acanth$regime))[2])) -> acanth_regimes$phy$node.label
+## Run 3 models: BM, BMS, OUM
+nearctic_acanth_BM_fit <- OUwie(acanth_regimes$phy, nearctic_acanth[,c(1,2,4)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+nearctic_acanth_BMS_fit <- OUwie(acanth_regimes$phy, nearctic_acanth[,c(1,2,4)], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+nearctic_acanth_BMS_fit <- OUwie(acanth_regimes$phy, nearctic_acanth[,c(1,2,4)], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #best fit
+nearctic_acanth_OUM_fit <- OUwie(acanth_regimes$phy, nearctic_acanth[,c(1,2,4)], model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 
-#Nematoda
-nearctic_nema_BM_fit <- OUwie(nema_regimes$phy, nearctic_nema[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 514.97  best model
-nearctic_nema_BMS_fit <- OUwie(nema_regimes$phy, nearctic_nema[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 577.44
-nearctic_nema_OUM_fit <- OUwie(nema_regimes$phy, nearctic_nema, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  #AICc 563.85
+## Nematoda
+nema_regimes <- corHMM(nearctic_nema_tree, nearctic_nema[,c(1,2)], model="ER", rate.cat=1, node.states = "marginal")
+## Fix the internal node regime names
+sapply(nema_regimes$phy$node.label, function(n)
+  switch(as.character(n),                                                    
+         "1"=levels(as.factor(nearctic_nema$regime))[1], 
+         "2"=levels(as.factor(nearctic_nema$regime))[2])) -> nema_regimes$phy$node.label
+## Run 3 models: BM, BMS, OUM
+nearctic_nema_BM_fit <- OUwie(nema_regimes$phy, nearctic_nema[,c(1,2,4)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 513.81
+nearctic_nema_BMS_fit <- OUwie(nema_regimes$phy, nearctic_nema[,c(1,2,4)], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc -705.51
+nearctic_nema_OUM_fit <- OUwie(nema_regimes$phy, nearctic_nema[,c(1,2,4)], model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)  #AICc 481.44
 
-#Platyhelminthes
-nearctic_platy_BM_fit <- OUwie(platy_regimes$phy, nearctic_platy[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 390.99 best model
-nearctic_platy_BMS_fit <- OUwie(platy_regimes$phy, nearctic_platy[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 463.869
-nearctic_platy_OUM_fit <- OUwie(platy_regimes$phy, nearctic_platy, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 460.40
+## Platyhelminthes
+platy_regimes <- corHMM(nearctic_platy_tree, nearctic_platy[,c(1,2)], model="ER", rate.cat=1, node.states = "marginal")
+## Fix the internal node regime names
+sapply(platy_regimes$phy$node.label, function(n)
+  switch(as.character(n),                                                    
+         "1"=levels(as.factor(nearctic_platy$regime))[1], 
+         "2"=levels(as.factor(nearctic_platy$regime))[2])) -> platy_regimes$phy$node.label
+## Run 3 models: BM, BMS, OUM
+nearctic_platy_BM_fit <- OUwie(platy_regimes$phy, nearctic_platy[,c(1,2,4)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 390.74
+nearctic_platy_BMS_fit <- OUwie(platy_regimes$phy, nearctic_platy[,c(1,2,4)], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 392.6983
+nearctic_platy_OUM_fit <- OUwie(platy_regimes$phy, nearctic_platy[,c(1,2,4)], model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) #AICc 390.3014
 
 #######################################
 
+## NOTE: I DIDN'T CHANGE ANYTHING BELOW HERE.
+## If you actually want to use these analyses, they'll need some of the fixes above.
 ## Nearctic dataset with single host species MPD removed
 
 nearctic_acanth_no_spec<-filter(nearctic_acanth, trait > 0)
@@ -595,15 +650,20 @@ nearctic_platy_no_spec_OUM_fit <- OUwie(platy_no_spec_regimes$phy, nearctic_plat
 ```{r OUmodels_Phyla_mpd_gmpd, include = TRUE}
 gmpd_phyla_data <- readRDS("gmpd_phyla_data.RDS")
 
-#regime data needs to includes species name, regime == Phyla, trait = the residuals of the gls(mpd ~ host pubs + phy)
-gmpd_phyla_data1<-data.frame(species = gmpd_phyla_data$species, regime = gmpd_phyla_data$phyla, trait = gls_host_pubs_tree_mpd_gmpd$residuals)
+#regime data needs to includes species name, regime == Phyla, trait = the residuals of the gls(mpd ~ host pubs)
+gmpd_phyla_data1<-data.frame(species = gmpd_phyla_data$species, regime = gmpd_phyla_data$phyla, trait = gls_host_pubs_mpd_gmpd$residuals)
 
 ## Get regimes for internal nodes using corHMM
-gmpd_phyla_regimes<-corHMM(gmpd_parasite_tree, gmpd_phyla_data1[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
-
+gmpd_phyla_regimes<-corHMM(gmpd_parasite_tree, gmpd_phyla_data1[,c(1,2)], model="ER", rate.cat=1, node.states = "marginal")
+## Fix the internal node regime names
+sapply(gmpd_phyla_regimes$phy$node.label, function(n)
+  switch(as.character(n),                                                    
+         "1"=levels(as.factor(gmpd_phyla_data1$regime))[1], 
+         "2"=levels(as.factor(gmpd_phyla_data1$regime))[2],
+         "3"=levels(as.factor(gmpd_phyla_data1$regime))[3])) -> gmpd_phyla_regimes$phy$node.label
 #run evolution models
-gmpd_phyla_BM_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
-gmpd_phyla_BMS_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_phyla_BM_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1, model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
+gmpd_phyla_BMS_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1, model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 gmpd_phyla_OU1_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 gmpd_phyla_OUM_fit <- OUwie(gmpd_phyla_regimes$phy, gmpd_phyla_data1, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf)
 
@@ -617,14 +677,22 @@ phyla_gmpd_fits # Print results table
 
 
 #regime data needs to includes species name, regime == Class, trait = the residuals of the gls(mpd ~ host pubs + phy)
-gmpd_phyla_data2<-data.frame(species = gmpd_phyla_data$species, regime = gmpd_phyla_data$regime, trait = gls_host_pubs_tree_mpd_gmpd$residuals, phyla = gmpd_phyla_data$phyla)
-
+gmpd_phyla_data2<-data.frame(species = gmpd_phyla_data$species, regime = gmpd_phyla_data$regime, trait = gls_host_pubs_mpd_gmpd$residuals)
 ## Get regimes for internal nodes using corHMM using Class
-gmpd_regimes<-corHMM(gmpd_parasite_tree, gmpd_phyla_data2[,c(1,3)], model="ER", rate.cat=1, node.states = "marginal")
-
+gmpd_regimes<-corHMM(gmpd_parasite_tree, gmpd_phyla_data2[,c(1,2)], model="ER", rate.cat=1, node.states = "marginal")
+## Fix the internal node regime names
+sapply(gmpd_regimes$phy$node.label, function(n)
+  switch(as.character(n),                                                    
+         "1"=levels(as.factor(gmpd_phyla_data2$regime))[1], 
+         "2"=levels(as.factor(gmpd_phyla_data2$regime))[2],
+         "3"=levels(as.factor(gmpd_phyla_data2$regime))[3],
+         "4"=levels(as.factor(gmpd_phyla_data2$regime))[4],
+         "5"=levels(as.factor(gmpd_phyla_data2$regime))[5],
+         "6"=levels(as.factor(gmpd_phyla_data2$regime))[6],
+         "7"=levels(as.factor(gmpd_phyla_data2$regime))[7])) -> gmpd_regimes$phy$node.label
 #run evolution models with regimes == Class
-gmpd_BM_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2[,c(1:3)], model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
-gmpd_BMS_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2[,1:3], model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_BM_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2, model="BM1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+gmpd_BMS_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2, model="BMS", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
 gmpd_OU_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2, model="OU1", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
 gmpd_OUM_fit <- OUwie(gmpd_regimes$phy, gmpd_phyla_data2, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
 
@@ -636,7 +704,9 @@ all_gmpd_fits <- tibble(model = names(all_gmpd), k = map_dbl(all_gmpd, ~.$param.
 loglik = map_dbl(all_gmpd, ~.$loglik), AICc = map_dbl(all_gmpd, ~.$AICc))
 all_gmpd_fits 
 
+
 ############ Remove single host parasites ###############
+## AGAIN, I DIDN'T TOUCH ANYTHING BELOW THIS POINT
 
 #regime data needs to includes species name, regime == Phyla, trait = the residuals of the gls(mpd ~ host pubs + phy)
 gmpd_phyla_data_no_specs<-subset(gmpd_phyla_data, trait > 0)
@@ -663,6 +733,7 @@ phyla_no_spec_gmpd_fits # Print results table
 ```
 
 ```{r OUmodels_Class_gmpd, include = FALSE}
+## ALSO DIDN'T TOUCH ANYTHING IN HERE
 
 #subset the data by Phyla
 gmpd_acanth<- gmpd_phyla_data2 %>% filter(phyla == "Acanthocephala")
@@ -744,24 +815,50 @@ gmpd_platy_no_spec_OUM_fit <- OUwie(gmpd_platy_no_spec_regimes$phy, gmpd_platy_n
 
 ## BOOTSTRAP ANALYSIS 
 
-#Brownian Motion
-gmpd_BM_boots <- OUwie.boot(gmpd_phyla_regimes$phy, 
-                         gmpd_phyla_data1[,c(1:3)],  
-                         model="BM1", nboot=1000, 
-                         alpha = gmpd_phyla_BM_fit$solution[1,], 
-                         sigma.sq = gmpd_phyla_BM_fit$solution[2,], 
-                         theta = gmpd_phyla_BM_fit$theta[,1], 
-                         theta0 = gmpd_phyla_BM_fit$theta[1,1],
-                         root.station = FALSE)
+#Brownian Motion doesn't work with OUwie.sim, a workhorse function for OUwie.boot
+OUwie.sim(fitted.object=gmpd_phyla_BM_fit)
 
-nearctic_BM_boots <- OUwie.boot(nearctic_phyla_regimes$phy,
-                             nearctic_phyla_data1[,c(1:3)],  
-                             model="BM1", nboot=1000, 
-                             alpha =  nearctic_phyla_BM_fit$solution[1,], 
-                             sigma.sq = nearctic_phyla_BM_fit$solution[2,], 
-                             theta = nearctic_phyla_BM_fit$theta[,1], 
-                             theta0 = nearctic_phyla_BM_fit$theta[1,1],
-                             root.station = FALSE)
+## It does work with OUM, but it doesn't respect regime names, which creates a problem internally
+OUwie.sim(fitted.object=gmpd_phyla_OUM_fit)
+
+## so change the regime names to regime numbers and then run OUwie.boot
+gmpd_phyla_regimes2 <- gmpd_phyla_regimes
+gmpd_phyla_regimes2$phy$node.label <- unname(sapply(gmpd_phyla_regimes$phy$node.label, 
+       function(n)
+         switch(n, 
+                "Acanthocephala"=1,
+                "Nematoda"=2,
+                "Platyhelminthes"=3)))
+gmpd_phyla_data2 = gmpd_phyla_data1[,1:2]
+gmpd_phyla_data2[,2] = unname(sapply(gmpd_phyla_data2[,2], 
+       function(n)
+         switch(n, 
+                "Acanthocephala"=1,
+                "Nematoda"=2,
+                "Platyhelminthes"=3)))
+## Nope, still get an error
+gmpd_BM_boots <- OUwie.boot(phy=gmpd_phyla_regimes2$phy, 
+                            data=gmpd_phyla_data2,  
+                            model="OUM", nboot=1000, 
+                            alpha = gmpd_phyla_OUM_fit$solution[1,], 
+                            sigma.sq = gmpd_phyla_OUM_fit$solution[2,], 
+                            theta = gmpd_phyla_OUM_fit$theta[,1], 
+                            theta0 = gmpd_phyla_OUM_fit$theta[1,1],
+                            root.station = FALSE)
+
+## Okay, what if I work manually?
+nboot <- 100
+res <- vector(mode='list', length=nboot)
+for (i in 1:nboot) {
+  ## simulate a new dataset
+  simdata <- OUwie.sim(fitted.object=gmpd_phyla_OUM_fit)
+  ## replace the real data with this fake data and refit with OUwie
+  gmpd_phyla_data1_sim <- gmpd_phyla_data1
+  gmpd_phyla_data1_sim[,3] <- simdata[,3]
+  simfit[[i]] <- OUwie(gmpd_regimes$phy, gmpd_phyla_data1_sim, model="OUM", root.station=FALSE, scale=TRUE, quiet=TRUE, ub=Inf) 
+}
+
+
 
 
 ## Simulate 1000 datasets using either the OUM, OU1 or the BM model, and then re-fit either the true data-generating model or the other model
