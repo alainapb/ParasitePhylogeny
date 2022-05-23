@@ -21,61 +21,26 @@ library(picante)
 library(pmc)
 library(corHMM)
 library(OUwie)
-
+library(ggrepel)
+library(patchwork)
 ```
 
 
 
-Supplmental Figure 1. 249 taxa helminth molecular phylogeny
+**Supplmental Figure 1.** 249 taxa helminth molecular phylogeny
 
 ```{r load_in_APBs_helminth_tree, echo=FALSE}
+##load data
+gmpd_data<-readRDS("GMPD_data.RDS")
+nearctic_data<-readRDS("Nearctic_data.RDS")
+## load trees
+gmpd_parasite_tree <- readRDS("GMPD_parasite_tree.RDS")
+nearctic_parasite_tree <- readRDS("Nearctic_parasite_tree.RDS")
+nearctic_mammal_tree <- readRDS("Nearctic_mammal_tree.RDS")
+gmpd_mammal_tree <- readRDS("GMPD_mammal_tree.RDS")
 
-
-## load tree
-tree<-read.nexus("hel2_44burn_copy.trees")
-
-## load the binomial names for the coded tree names
-nom <- read.csv("name_key.csv")
-
-# make nom characters not factors
-nom$CorrectName<-as.character(nom$CorrectName)
-nom$Code<-as.character(nom$Code)
-
-## ensure that every tip has a binomial name
-#which(!(tree$tip.label %in% nom[,2])) ## ZTGLUN does not have a binomial name
-
-## drop it from the tree
-hel_tree <- drop.tip(tree, "ZTGLUN")
-tree <- drop.tip(hel_tree, "HABMUS") #nematodes in the wrong area of the tree
-tree <- drop.tip(tree, "ASCLUM") #nematodes in the wrong area of the tree
-tree <- drop.tip(tree, "ASCSUU") #nematodes in the wrong area of the tree
-tree <- drop.tip(tree, "PELSTR") #nematodes in the wrong area of the tree
-
-##binomial names for only the species in the tree
-nom[nom$Code %in% tree$tip.label,]->a
-
-##nom in same order as tree tip labels
-b<- a[match(tree$tip.label, a$Code),]
-
-#replace code names with binomial names
-tree$tip.label<-b$CorrectName
-
-#check
-#plot(tree, cex=0.3, type = "f")
-
-#rename the global tree for GMPD data
-global_tree<-tree
-
-
-global_tree<-drop.tip(global_tree, c("Filaria martis","Prosthenorchis elegans"))
-
-plotTree(global_tree, fsize =0.3, type = "fan")
+plotTree(gmpd_parasite_tree, fsize =0.3, type = "fan")
 ```
-
-
-
-
-
 
 
 
@@ -84,844 +49,17 @@ plotTree(global_tree, fsize =0.3, type = "fan")
 
 
 \newpage
-
-```{r load_nearctic_data, include = FALSE}
-#host-parasite association data
-nearctic_assoc_data<-read.csv("Host_Range_Nearctic_Mammals_list.csv", header=T)
-
-#change to characters instead of factors
-nearctic_assoc_data$Host<-as.character(nearctic_assoc_data$Host)
-nearctic_assoc_data$Parasite<-as.character(nearctic_assoc_data$Parasite)
-
-#parasite abundance/occurence data
-nearctic_abund_data<-read.csv("Host_Range_Nearctic_Mammals.csv")
-
-#change to characters instead of factors
-nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
-
-## Read in GMPD data
-GMPDmain<-read.csv("GMPD_main.csv")
-GMPDparasite<-read.csv("GMPD_parasite_traits.csv")
-
-## Load GMPD data and subset down to the species in the parasite phylogeny
-GMPDsmall<-GMPDmain[GMPDmain$ParasiteCorrectedName %in% global_tree$tip.label, ]
-
-
-##load complete mammal tree from PHYLACINE
-large_mam_tree<-read.nexus("mammal_phylo_consensus.nex")
-
-
-large_mam_tree$tip.label<-gsub("_", " ", large_mam_tree$tip.label)
-
-setdiff(GMPDsmall$HostCorrectedName, large_mam_tree$tip.label)
-
-#### Make sure host names in the GMPD match host names in the PHYLACINE tree ####
-
-
-#Make names match Elton binomial names
-GMPDsmall$HostCorrectedName<-gsub("Cercopithecus albogularis", "Cercopithecus mitis", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus burchelli", "Equus quagga", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus quaggai", "Equus quagga", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Otaria flavescens", "Otaria byronia", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Cercopithecus lhoesti","Allochrocebus lhoesti", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus caballus","Equus ferus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Lama glama","Lama guanicoe", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Bos frontalis","Bos gaurus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus asinus", "Equus hemionus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Equus asinus", "Equus hemionus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Monachus schauinslandi", "Neomonachus schauinslandi", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Neotragus moschatus", "Neotragus pygmaeus", GMPDsmall$HostCorrectedName)
-
-GMPDsmall$HostCorrectedName<-gsub("Ovis aries", "Ovis orientalis", GMPDsmall$HostCorrectedName)
-
-
-##remove the ones without a name
-GMPDsmall <- GMPDsmall[GMPDsmall$HostCorrectedName!="no binomial name",]
-
-
-#### MAKE A MAMMAL TREE FOR HOSTS IN THE NEARCTIC DATASET ####
-
-##prune large tree to only include mammals from the Nearctic dataset
-setdiff(large_mam_tree$tip.label, nearctic_assoc_data$Host)->bye
-nearctic_mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%bye)])
-plot(nearctic_mammal_tree, cex=0.3)
-
-#check if any hosts are missing
-setdiff(nearctic_assoc_data$Host, nearctic_mammal_tree$tip.label)->missing
-missing # "Mustela vison", "Alces americanus", "Alopex lagopus", "Erethizon dorsatus"
-
-
-#### MAKE A MAMMAL TREE FOR HOSTS IN THE GMPD DATASET ####
-
-#prune small tree to only include mammals from the GMPD
-setdiff(large_mam_tree$tip.label, GMPDsmall$HostCorrectedName)->bye2
-GMPD_mammal_tree<-drop.tip(large_mam_tree, large_mam_tree$tip.label[which(large_mam_tree$tip.label%in%bye2)])
-plot(GMPD_mammal_tree, cex=0.3)
-
-
-##subset global tree to nearctic data
-setdiff(global_tree$tip.label, nearctic_assoc_data$Parasite)->bye3
-nearctic_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye3)])
-plot(nearctic_tree, cex=0.3)
-
-#interspecific distance matrix of parasites
-nearctic_dis_para<-cophenetic.phylo(nearctic_tree) 
-
-#intespecific distance matrix of mammals 
-nearctic_dis_mam<-cophenetic.phylo(nearctic_mammal_tree) 
-
-##make the pipeline to get the absense/presence of 
-##each parasite (rows) that infect a given host (column)
-
-nearctic_mamlist<-as.vector(nearctic_mammal_tree$tip.label) #list of mammals in tip label order
-
-nearctic_para_list<-as.vector(nearctic_tree$tip.label) #list of parasites
-
-#make a dataframe with host names as columns and parasite names as rows
-nearctic_df <- data.frame(matrix(ncol=length(nearctic_mamlist),nrow=length(nearctic_para_list)), row.names = nearctic_para_list)
-colnames(nearctic_df)<-nearctic_mamlist
-
-# complete dataframe with association data, 
-# where 0 = not found in host and 1 = found in host
-
-for (i in 1:nrow(nearctic_df))
-  nearctic_df[i,] <- (colnames(nearctic_df) %in% unique(subset(nearctic_assoc_data, Parasite==rownames(nearctic_df)[i])$Host)) %>% as.numeric
-
-#save matrix
-write.csv(nearctic_df,file = "association_matrix_neoartic.csv", row.names = TRUE, col.names = TRUE)
-
-
-## Create MPD scores for every parasite using the Phylacine mammal tree 
-nearctic.para.mpd <- mpd(nearctic_df, nearctic_dis_mam)
-nearctic.para.mpd[is.na(nearctic.para.mpd)] <- 0 ## one host species have an MPD of 0
-names(nearctic.para.mpd)<-nearctic_para_list
-
-
-## Create MPD scores for every parasite using the Phylacine mammal tree 
-nearctic.para.mpd.remove <- mpd(nearctic_df, nearctic_dis_mam)
-names(nearctic.para.mpd.remove)<-nearctic_para_list
-nearctic.para.mpd.remove<-nearctic.para.mpd.remove[!is.na(nearctic.para.mpd.remove)] ## one host species MPD removed
-
-
-
-## Create MPD scores for every host using the helminth tree
-nearctic.mam.mpd <- mpd(t(nearctic_df), nearctic_dis_para)
-nearctic.mam.mpd[is.na(nearctic.mam.mpd)] <- 0 ## hosts infected by only one parasite have MPD of 0
-names(nearctic.mam.mpd)<-nearctic_mamlist
-
-## Create MPD scores for every host using the helminth tree
-nearctic.mam.mpd.remove <- mpd(t(nearctic_df), nearctic_dis_para)
-names(nearctic.mam.mpd.remove)<-nearctic_mamlist
-nearctic.mam.mpd.remove<-nearctic.mam.mpd.remove[!is.na(nearctic.mam.mpd.remove)] ## hosts infected by only one parasite have MPD of 0
-
-
-##calculate the mpd of parasites and hosts!
-global_dis_para<-cophenetic.phylo(global_tree) #interspecific distance matrix of parasites
-global_dis_mam<-cophenetic.phylo(GMPD_mammal_tree) #intespecific distance matrix of mammals from small tree
-
-
-##make the pipeline to get the absense presence of each parasite (rows) that infect a given host (column)
-global_mamlist<-as.vector(GMPD_mammal_tree$tip.label) #list of mammals in tip label order
-global_para_list<-as.vector(global_tree$tip.label)
-global_df <- data.frame(matrix(ncol=length(global_mamlist),nrow=length(global_para_list)), row.names = global_para_list)
-colnames(global_df)<-global_mamlist
-
-for (i in 1:nrow(global_df))
-  global_df[i,] <- (colnames(global_df) %in% unique(subset(GMPDsmall, ParasiteCorrectedName==rownames(global_df)[i])$HostCorrectedName)) %>% as.numeric
-
-write.csv(global_df,file = "global_df.csv", row.names = TRUE, col.names = TRUE)
-
-## Create MPD scores for every parasite using the Phylacine tree
-global.para.mpd <- mpd(global_df, global_dis_mam)
-global.para.mpd[is.na(global.para.mpd)] <- 0 ## one host parasites have an mpd of 0
-names(global.para.mpd)<-global_para_list
-
-global.para.mpd.remove <- mpd(global_df, global_dis_mam)
-names(global.para.mpd.remove)<-global_para_list
-global.para.mpd.remove<-global.para.mpd.remove[!is.na(global.para.mpd.remove)] ## one host parasites are removed
-
-## Create MPD scores for every host using the helminth tree
-global.mam.mpd <- mpd(t(global_df), global_dis_para)
-global.mam.mpd[is.na(global.mam.mpd)] <- 0 ## hosts infected by only one parasite have MPD of 0
-names(global.mam.mpd)<-global_mamlist
-
-## Create MPD scores for every host using the helminth tree
-global.mam.mpd.remove <- mpd(t(global_df), global_dis_para)
-names(global.mam.mpd.remove)<-global_mamlist
-global.mam.mpd.remove<-global.mam.mpd.remove[!is.na(global.mam.mpd.remove)] ## hosts infected by only one parasite have MPD of 0
-
-```
-
-
-
-
-Nearctic helminth phylogeny, with single host taxa's MPD value = 0, branches colored by MPD value
-```{r echo = FALSE}
-contMap(nearctic_tree, nearctic.para.mpd, fsize= .3, lwd=1, leg.text="x", type="fan") #90 species
-```
-
-
-
-
-
-Test of phylogenetic signal in MPD using the Nearctic helminth phylogeny, with single host taxa's MPD value = 0
-```{r echo = FALSE}
-##test phylogenetic signal of mpd with single host species = 0
-#fitContinuous(nearctic_tree, nearctic.para.mpd, model="lambda") 
-#lambda = 0.384 ; aicc = 1017.13
-#fitContinuous(nearctic_tree, nearctic.para.mpd, model="white")  
-#                 aicc = 1023.17           
-
-
-
-nearctic_mpd_evo<-c(1017.13,1023.17)
-names(nearctic_mpd_evo)<-c("lambda","star")
-nearctic_aic_mpd_signal <- tibble(aicc=nearctic_mpd_evo, model=names(nearctic_mpd_evo))
-nearctic_aic_mpd<-nearctic_aic_mpd_signal %>% 
-   mutate(deltaaicc=aicc-min(aicc), 
-          pow=exp(-.5*deltaaicc),
-          sumpow=sum(pow),
-          waicc=pow/sumpow) %>%
-   dplyr::select(c(2,1,3,6)) %>%
-   arrange(desc(waicc))
-
-nearctic_aic_mpd
-```
-
-
-
-\newpage
-Nearctic helminth phylogney, with single host taxa removed, branches colored by MPD value
-```{r echo = FALSE}
-#view mpd with single host species removed on the tree
-setdiff(nearctic_tree$tip.label, names(nearctic.para.mpd.remove))->bye4
-remove_nearctic_tree<-drop.tip(nearctic_tree, nearctic_tree$tip.label[which(nearctic_tree$tip.label%in%bye4)])
-#plot(remove_nearctic_tree, cex=0.3)
-
-contMap(remove_nearctic_tree, nearctic.para.mpd.remove, fsize=.3, lwd=1) #70 species
-
-```
-
-
-
-
-Test of phylogenetic signal in MPD using the Nearctic helminth phylogeny,with single host taxa removed
-```{r echo = FALSE}
-##test phylogenetic signal of mpd with single host species removed
-#fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="lambda") 
-#lambda = 0.926; aicc = 773.37
-#fitContinuous(remove_nearctic_tree, nearctic.para.mpd.remove, model="white")  
-#                aicc = 791.72
-
-
-remove_nearctic_mpd_evo<-c(773.37,791.72)
-names(remove_nearctic_mpd_evo)<-c("lambda","star")
-
-remove_nearctic_aic_mpd_signal <- tibble(aicc=remove_nearctic_mpd_evo, model=names(remove_nearctic_mpd_evo))
-
-removed_nearctic_aic_mpd<-remove_nearctic_aic_mpd_signal %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-removed_nearctic_aic_mpd
-```
-
-
-
-\newpage
-GMPD helminth phylogeny, with single host taxa's MPD value = 0, branches colored by MPD value
-```{r echo = FALSE}
-#view mpd with single host species = 0 on the tree
-contMap(global_tree, global.para.mpd, fsize= .3,lwd=2, type="fan") #249 species
-```
-
-
-
-
-
-Test of phylogenetic signal in MPD using the GMPD helminth phylogeny, with single host taxa's MPD value = 0
-```{r echo = FALSE}
-##test phylogenetic signal of mpd with single host species = 0
-#fitContinuous(global_tree, global.para.mpd, model="lambda") 
-#lambda = 0.607 ; aicc = 2473.54
-#fitContinuous(global_tree, global.para.mpd, model="white")  
-#                 aicc = 2509.03           
-
-
-global_mpd_evo<-c(2473.54,2509.03)
-names(global_mpd_evo)<-c("lambda","star")
-global_aic_mpd_signal <- tibble(aicc=global_mpd_evo, model=names(global_mpd_evo))
-global_aic_mpd<-global_aic_mpd_signal %>% 
-   mutate(deltaaicc=aicc-min(aicc), 
-          pow=exp(-.5*deltaaicc),
-          sumpow=sum(pow),
-          waicc=pow/sumpow) %>%
-   dplyr::select(c(2,1,3,6)) %>%
-   arrange(desc(waicc))
-
-global_aic_mpd
-```
-
-
-
-\newpage
-GMPD helminth phylogeny, with single host taxa removed, branches colored by MPD value
-```{r echo = FALSE}
-#view mpd with single host species removed on the tree
-setdiff(global_tree$tip.label, names(global.para.mpd.remove))->bye5
-remove_global_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye5)])
-#plot(remove_global_tree, cex=0.3)
-
-contMap(remove_global_tree, global.para.mpd.remove, fsize=.3, lwd=1, type="fan") #159 species
-```
-
-
-
-
-
-Test of phylogenetic signal in MPD using the GMPD helminth phylogeny, with single host taxa removed
-```{r echo = FALSE}
-##test phylogenetic signal of mpd with single host species removed
-#fitContinuous(remove_global_tree, global.para.mpd.remove, model="lambda") 
-#lambda = 0.895; aicc = 1547.52
-#fitContinuous(remove_global_tree, global.para.mpd.remove, model="white")  
-#                aicc = 1606.16
-
-
-remove_global_mpd_evo<-c(1547.52,1606.16)
-names(remove_global_mpd_evo)<-c("lambda","star")
-
-remove_global_aic_mpd_signal <- tibble(aicc=remove_global_mpd_evo, model=names(remove_global_mpd_evo))
-
-removed_global_aic_mpd<-remove_global_aic_mpd_signal %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-removed_global_aic_mpd
-```
-
-
-\newpage
-Test of phylogenetic signal in taxonomic breadth using the Nearctic helminth phylogeny, with single host taxa included
-```{r echo = FALSE}
-##same order as tree tip labels
-nearctic_freq<- nearctic_abund_data[match(nearctic_tree$tip.label, nearctic_abund_data$Parasite),]
-
-nearctic.no.taxa<-nearctic_freq$Freq #includes single host species
-names(nearctic.no.taxa)<-nearctic_freq$Parasite
-
-
-remove.nearctic.no.taxa<-(nearctic.no.taxa[!nearctic.no.taxa == 1]) # removes single host species
-
-##test phylogenetic signal for data with single host species
-#fitContinuous(nearctic_tree, nearctic.no.taxa, model="lambda") 
-#lambda=0.094,  aicc= 471.32
-#fitContinuous(nearctic_tree, nearctic.no.taxa, model="white")                 
-#               aicc= 469.62
-
-
-nearctic_no_taxa_evo<-c(471.32, 469.62)
-names(nearctic_no_taxa_evo)<-c("lambda", "star")
-
-nearctic_aic_taxa <- tibble(aicc=nearctic_no_taxa_evo, model=names(nearctic_no_taxa_evo))
-
-nearctic_aic_taxa<-nearctic_aic_taxa %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-nearctic_aic_taxa
-
-```
-
-
-
-
-
-Test of phylogenetic signal in taxonomic breadth using the Nearctic helminth phylogeny, with single host taxa removed
-```{r echo = FALSE}
-##test phylogenetic signal for data without single host species
-#fitContinuous(remove_nearctic_tree, remove.nearctic.no.taxa, model="lambda") 
-#lambda=0.091,  aicc= 363.06
-#fitContinuous(remove_nearctic_tree, remove.nearctic.no.taxa, model="white")              
-#               aicc= 361.07
-
-remove_nearctic_no_taxa_evo<-c(363.06, 361.07)
-names(remove_nearctic_no_taxa_evo)<-c("lambda", "star")
-
-remove_nearctic_aic_taxa <- tibble(aicc=remove_nearctic_no_taxa_evo, model=names(remove_nearctic_no_taxa_evo))
-
-remove_nearctic_aic_taxa<-remove_nearctic_aic_taxa %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-remove_nearctic_aic_taxa
-```
-
-
-
-
-
-Test of phylogenetic signal in taxonomic breadth using the GMPD helminth phylogeny, with single host taxa included
-```{r echo = FALSE}
-load("get_nriABUND.Rda") ## nri
-
-no_taxa<-as.data.frame(nri$ntaxa)
-no_taxa$parasite<-rownames(nri)
-
-global_freq<-no_taxa[no_taxa$parasite %in% global_tree$tip.label, ] #197 species
-
-#subset global tree 
-setdiff(global_tree$tip.label, no_taxa$parasite)->bye6
-ntaxa_global_tree<-drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%bye6)])
-#check
-#plot(ntaxa_global_tree, cex=0.3)
-
-##same order as tree tip labels
-g_freq<- global_freq[match(ntaxa_global_tree$tip.label, global_freq$parasite),]
-
-#make the vector a named number
-global.no.taxa<-g_freq$`nri$ntaxa` #includes single host species
-names(global.no.taxa)<-g_freq$parasite
-
-#check
-#contMap(ntaxa_global_tree, global.no.taxa, fsize=.3, type = "fan")
-
-
-#remove single host species
-remove.global.no.taxa<-(global.no.taxa[!global.no.taxa == 1]) #134 species
-
-#subset a tree to match the removed dataset
-setdiff(ntaxa_global_tree$tip.label, names(remove.global.no.taxa))->bye7
-remove_ntaxa_global_tree<-drop.tip(ntaxa_global_tree, ntaxa_global_tree$tip.label[which(ntaxa_global_tree$tip.label%in%bye7)])
-
-#check
-#contMap(remove_ntaxa_global_tree, remove.global.no.taxa, fsize=.3, type ="fan")
-
-
-
-##test phylogenetic signal for data with single host species
-#fitContinuous(ntaxa_global_tree, global.no.taxa, model="lambda") 
-#lambda=0.000,  aicc= 1159.04
-#fitContinuous(ntaxa_global_tree, global.no.taxa, model="white")                 
-#               aicc= 1156.97
-
-
-global_no_taxa_evo<-c(1159.04, 1156.97)
-names(global_no_taxa_evo)<-c("lambda", "star")
-
-global_aic_taxa <- tibble(aicc=global_no_taxa_evo, model=names(global_no_taxa_evo))
-
-global_aic_taxa<-global_aic_taxa %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-global_aic_taxa
-```
-
-
-
-
-
-Test of phylogenetic signal in taxonomic breadth using the GMPD helminth phylogeny, with single host taxa removed
-```{r echo = FALSE}
-##test phylogenetic signal for data without single host species
-#fitContinuous(remove_ntaxa_global_tree, remove.global.no.taxa, model="lambda") 
-#lambda=0.000,  aicc = 802.86
-#fitContinuous(remove_ntaxa_global_tree, remove.global.no.taxa, model="white")             
-#               aicc = 800.77
-
-remove_global_no_taxa_evo<-c(802.86, 800.77)
-names(remove_global_no_taxa_evo)<-c("lambda", "star")
-
-remove_global_aic_taxa <- tibble(aicc=remove_global_no_taxa_evo, model=names(remove_global_no_taxa_evo))
-
-remove_global_aic_taxa<-remove_global_aic_taxa %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(2,1,3,6)) %>%
-  arrange(desc(waicc))
-
-remove_global_aic_taxa
-```
-
-
-```{r include = FALSE}
-###NEARCTIC DATASET####
-
-#match GMPD data to the nearctic tree (to get Phyla classifications)
-g<-GMPDsmall[match(nearctic_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
-
-#make Phyla dataframe (names, regimes, trait)
-nearctic_phyla_data<-data.frame(nearctic_tree$tip.label)
-nearctic_phyla_data$regime<-g$ParPhylum
-nearctic_phyla_data$trait<-nearctic.para.mpd
-
-## remake to be able to use ouch rather than OUwie
-nearctic_ouchtree <- ape2ouch(nearctic_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-nearctic_ouchdata <- rep(NA, length=nearctic_ouchtree@nnodes)
-for (i in 1:length(nearctic_phyla_data$nearctic_tree.tip.label))
-  nearctic_ouchdata[which(nearctic_ouchtree@nodelabels==nearctic_phyla_data$nearctic_tree.tip.label[i])] <- nearctic_phyla_data$trait[i]
-nearctic_ouchdata <- as.data.frame(nearctic_ouchdata)
-
-## Find the node that corresponds to the most recent common ancestor of all Platyhelminthes
-## which nodes in the ouchtree correspond to the Plats
-nearctic_ouchtree@nodelabels%in%nearctic_phyla_data$nearctic_tree.tip.label[which(nearctic_phyla_data$regime=="Platyhelminthes")] %>% which -> platys
-## get their lineages and find the nodes that are in common across all lineages
-nearctic_ouchtree@lineages[platys] -> platy_lineages
-platy_lineages[[1]][sapply(platy_lineages[[1]], function(n) lapply(platy_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 1
-
-## Find the node that corresponds to the most recent common ancestor of all Acanthocephalans
-## which nodes in the ouchtree correspond to the Acanths
-nearctic_ouchtree@nodelabels%in%nearctic_phyla_data$nearctic_tree.tip.label[which(nearctic_phyla_data$regime=="Acanthocephala")] %>% which -> acanths
-## get their lineages and find the nodes that are in common across all lineages
-nearctic_ouchtree@lineages[acanths] -> acanth_lineages
-acanth_lineages[[1]][sapply(acanth_lineages[[1]], function(n) lapply(acanth_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 86
-
-## Find the node that corresponds to the most recent common ancestor of all Nematodes
-## which nodes in the ouchtree correspond to the Nematodes
-nearctic_ouchtree@nodelabels%in%nearctic_phyla_data$nearctic_tree.tip.label[which(nearctic_phyla_data$regime=="Nematoda")] %>% which -> nematodes
-## get their lineages and find the nodes that are in common across all lineages
-nearctic_ouchtree@lineages[nematodes] -> nematode_lineages
-nematode_lineages[[1]][sapply(nematode_lineages[[1]], function(n) lapply(nematode_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min]
-
-## paint the taxonomy-based regimes onto the tree
-paint(nearctic_ouchtree, subtree=c("1"="Platys","86"="Acanths","81"="Nematodes"), branch=c("1"="Platys")) -> nearctic_oum_regimes
-## paint a single global regime onto the tree
-paint(nearctic_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> nearctic_ou1_regimes
-
-## Plot to make sure that you end up with a reasonable painting
-plot(nearctic_ouchtree, regimes=nearctic_oum_regimes)
-
-## Now do the fitting using ouch
-## OUM: AICc = 1008.5, alpha = 21.2, sigma.sq = 167044, Acanths = 134, Nematodes = 41.8, Platys = 95.2
-nearctic_oum_ouch <- hansen(data=nearctic_ouchdata, tree=nearctic_ouchtree, regimes=nearctic_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 1017.7, alpha = 6.35, sigma.sq = 63148, global = 71.7
-nearctic_ou1_ouch <- hansen(data=nearctic_ouchdata, tree=nearctic_ouchtree, regimes=nearctic_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 1039.0, sigma.sq = 25897
-nearctic_bm_ouch <- brown(data=nearctic_ouchdata, tree=nearctic_ouchtree)
-
-#######################################
-
-
-## Nearctic dataset with single host species MPD removed
-
-#match GMPD data to the remove_nearctic tree (to get Phyla classifications)
-h<-GMPDsmall[match(remove_nearctic_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
-
-#make Phyla dataframe (names, regimes, trait)
-remove_nearctic_phyla_data<-data.frame(remove_nearctic_tree$tip.label)
-remove_nearctic_phyla_data$regime<-h$ParPhylum
-remove_nearctic_phyla_data$trait<-nearctic.para.mpd.remove
-
-## remake to be able to use ouch rather than OUwie
-remove_nearctic_ouchtree <- ape2ouch(remove_nearctic_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-remove_nearctic_ouchdata <- rep(NA, length=remove_nearctic_ouchtree@nnodes)
-for (i in 1:length(remove_nearctic_phyla_data$remove_nearctic_tree.tip.label))
-  remove_nearctic_ouchdata[which(remove_nearctic_ouchtree@nodelabels==remove_nearctic_phyla_data$remove_nearctic_tree.tip.label[i])] <- remove_nearctic_phyla_data$trait[i]
-remove_nearctic_ouchdata <- as.data.frame(remove_nearctic_ouchdata)
-
-## You can use the code above, replacing nearctic with remove_nearctic, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
-## paint the regimes onto the tree
-paint(remove_nearctic_ouchtree, subtree=c("1"="Platys","67"="Acanths","64"="Nematodes"), branch=c("1"="Platys")) -> remove_nearctic_oum_regimes
-paint(remove_nearctic_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> remove_nearctic_ou1_regimes
-## Plot it to make sure it looks good
-plot(remove_nearctic_ouchtree, regimes=remove_nearctic_oum_regimes)
-
-## Now do the fitting using ouch
-
-## OUM: AICc = 762.9, alpha = 458.6, sigma.sq = 2628906, Acanths = 201, Nematodes = 52.8, Platys = 119
-remove_nearctic_oum_ouch <- hansen(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree, regimes=remove_nearctic_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 778.5, alpha = 2.63, sigma.sq = 26815.8, global = 99.04
-remove_nearctic_ou1_ouch <- hansen(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree, regimes=remove_nearctic_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 782.6, sigma.sq = 15840
-remove_nearctic_bm_ouch <- brown(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree)
-
-#######################################
-
-###GLOBAL DATASET####
-
-#match GMPD data to the global tree
-k<-GMPDsmall[match(global_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
-
-#make Phyla dataframe (names, regimes, trait)
-global_phyla_data<-data.frame(global_tree$tip.label)
-global_phyla_data$regime<-k$ParPhylum
-global_phyla_data$trait<-global.para.mpd
-
-## Painting taxonomy-based regimes onto this tree
-global_ouchtree <- ape2ouch(global_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-global_ouchdata <- rep(NA, length=global_ouchtree@nnodes)
-for (i in 1:length(global_phyla_data$global_tree.tip.label))
-  global_ouchdata[which(global_ouchtree@nodelabels==global_phyla_data$global_tree.tip.label[i])] <- global_phyla_data$trait[i]
-global_ouchdata <- as.data.frame(global_ouchdata)
-
-## You can use the code above, replacing nearctic with global, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
-
-## paint the regimes onto the tree
-paint(global_ouchtree, subtree=c("1"="Platys","227"="Nematodes","243"="Acanths"), branch=c("1"="Platys")) -> global_oum_regimes
-## global regime
-paint(global_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> global_ou1_regimes
-## Plot it to make sure it looks good
-plot(global_ouchtree, regimes=global_oum_regimes)
-
-
-## Now do the fitting using ouch
-## OUM: AICc = 2480.3, alpha = 16.8, sigma.sq = 42480.8, Acanths = 24.8, Nematodes = 21.7, Platys = 47.6
-global_oum_ouch <- hansen(data=global_ouchdata, tree=global_ouchtree, regimes=global_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 2490.3, alpha = 9.14, sigma.sq = 26943.6, global = 33.3 
-global_ou1_ouch <- hansen(data=global_ouchdata, tree=global_ouchtree, regimes=global_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 2571.44, sigma.sq = 12334.6
-global_bm_ouch <- brown(data=global_ouchdata, tree=global_ouchtree)
-
-#######################################
-
-##with single host species MPD removed
-
-#match GMPD data to the remove_global tree
-l<-GMPDsmall[match(remove_global_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
-
-#make Phyla dataframe for OUwie (names, regimes, trait)
-remove_global_phyla_data<-data.frame(remove_global_tree$tip.label)
-remove_global_phyla_data$regime<-l$ParPhylum
-remove_global_phyla_data$trait<-global.para.mpd.remove
-
-## Prepare for ouch
-remove_global_ouchtree <- ape2ouch(remove_global_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-remove_global_ouchdata <- rep(NA, length=remove_global_ouchtree@nnodes)
-for (i in 1:length(remove_global_phyla_data$remove_global_tree.tip.label))
-  remove_global_ouchdata[which(remove_global_ouchtree@nodelabels==remove_global_phyla_data$remove_global_tree.tip.label[i])] <- remove_global_phyla_data$trait[i]
-remove_global_ouchdata <- as.data.frame(remove_global_ouchdata)
-
-## You can use the code above, replacing nearctic with remove_global, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
-
-
-## paint the regimes onto the tree
-paint(remove_global_ouchtree, subtree=c("1"="Platys","150"="Nematodes","155"="Acanths"), branch=c("1"="Platys")) -> remove_global_oum_regimes
-## global regime
-paint(remove_global_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> remove_global_ou1_regimes
-
-## Plot it to make sure it looks good
-plot(remove_global_ouchtree, regimes=remove_global_oum_regimes)
-###NEARCTIC DATASET####
-
-#match GMPD data to the nearctic tree (to get Phyla classifications)
-g<-GMPDsmall[match(nearctic_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
-
-#make Phyla dataframe (names, regimes, trait)
-nearctic_phyla_data<-data.frame(nearctic_tree$tip.label)
-nearctic_phyla_data$regime<-g$ParPhylum
-nearctic_phyla_data$trait<-nearctic.para.mpd
-
-## remake to be able to use ouch rather than OUwie
-nearctic_ouchtree <- ape2ouch(nearctic_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-nearctic_ouchdata <- rep(NA, length=nearctic_ouchtree@nnodes)
-for (i in 1:length(nearctic_phyla_data$nearctic_tree.tip.label))
-  nearctic_ouchdata[which(nearctic_ouchtree@nodelabels==nearctic_phyla_data$nearctic_tree.tip.label[i])] <- nearctic_phyla_data$trait[i]
-nearctic_ouchdata <- as.data.frame(nearctic_ouchdata)
-
-## Find the node that corresponds to the most recent common ancestor of all Platyhelminthes
-## which nodes in the ouchtree correspond to the Plats
-nearctic_ouchtree@nodelabels%in%nearctic_phyla_data$nearctic_tree.tip.label[which(nearctic_phyla_data$regime=="Platyhelminthes")] %>% which -> platys
-## get their lineages and find the nodes that are in common across all lineages
-nearctic_ouchtree@lineages[platys] -> platy_lineages
-platy_lineages[[1]][sapply(platy_lineages[[1]], function(n) lapply(platy_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 1
-
-## Find the node that corresponds to the most recent common ancestor of all Acanthocephalans
-## which nodes in the ouchtree correspond to the Acanths
-nearctic_ouchtree@nodelabels%in%nearctic_phyla_data$nearctic_tree.tip.label[which(nearctic_phyla_data$regime=="Acanthocephala")] %>% which -> acanths
-## get their lineages and find the nodes that are in common across all lineages
-nearctic_ouchtree@lineages[acanths] -> acanth_lineages
-acanth_lineages[[1]][sapply(acanth_lineages[[1]], function(n) lapply(acanth_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min] ## 86
-
-## Find the node that corresponds to the most recent common ancestor of all Nematodes
-## which nodes in the ouchtree correspond to the Nematodes
-nearctic_ouchtree@nodelabels%in%nearctic_phyla_data$nearctic_tree.tip.label[which(nearctic_phyla_data$regime=="Nematoda")] %>% which -> nematodes
-## get their lineages and find the nodes that are in common across all lineages
-nearctic_ouchtree@lineages[nematodes] -> nematode_lineages
-nematode_lineages[[1]][sapply(nematode_lineages[[1]], function(n) lapply(nematode_lineages, function(l) n%in%l) %>% unlist %>% all) %>% which %>% min]
-
-## paint the taxonomy-based regimes onto the tree
-paint(nearctic_ouchtree, subtree=c("1"="Platys","86"="Acanths","81"="Nematodes"), branch=c("1"="Platys")) -> nearctic_oum_regimes
-## paint a single global regime onto the tree
-paint(nearctic_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> nearctic_ou1_regimes
-
-## Plot to make sure that you end up with a reasonable painting
-plot(nearctic_ouchtree, regimes=nearctic_oum_regimes)
-
-## Now do the fitting using ouch
-## OUM: AICc = 1008.5, alpha = 21.2, sigma.sq = 167044, Acanths = 134, Nematodes = 41.8, Platys = 95.2
-nearctic_oum_ouch <- hansen(data=nearctic_ouchdata, tree=nearctic_ouchtree, regimes=nearctic_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 1017.7, alpha = 6.35, sigma.sq = 63148, global = 71.7
-nearctic_ou1_ouch <- hansen(data=nearctic_ouchdata, tree=nearctic_ouchtree, regimes=nearctic_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 1039.0, sigma.sq = 25897
-nearctic_bm_ouch <- brown(data=nearctic_ouchdata, tree=nearctic_ouchtree)
-
-#######################################
-
-
-## Nearctic dataset with single host species MPD removed
-
-#match GMPD data to the remove_nearctic tree (to get Phyla classifications)
-h<-GMPDsmall[match(remove_nearctic_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
-
-#make Phyla dataframe (names, regimes, trait)
-remove_nearctic_phyla_data<-data.frame(remove_nearctic_tree$tip.label)
-remove_nearctic_phyla_data$regime<-h$ParPhylum
-remove_nearctic_phyla_data$trait<-nearctic.para.mpd.remove
-
-## remake to be able to use ouch rather than OUwie
-remove_nearctic_ouchtree <- ape2ouch(remove_nearctic_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-remove_nearctic_ouchdata <- rep(NA, length=remove_nearctic_ouchtree@nnodes)
-for (i in 1:length(remove_nearctic_phyla_data$remove_nearctic_tree.tip.label))
-  remove_nearctic_ouchdata[which(remove_nearctic_ouchtree@nodelabels==remove_nearctic_phyla_data$remove_nearctic_tree.tip.label[i])] <- remove_nearctic_phyla_data$trait[i]
-remove_nearctic_ouchdata <- as.data.frame(remove_nearctic_ouchdata)
-
-## You can use the code above, replacing nearctic with remove_nearctic, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
-## paint the regimes onto the tree
-paint(remove_nearctic_ouchtree, subtree=c("1"="Platys","67"="Acanths","64"="Nematodes"), branch=c("1"="Platys")) -> remove_nearctic_oum_regimes
-paint(remove_nearctic_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> remove_nearctic_ou1_regimes
-## Plot it to make sure it looks good
-plot(remove_nearctic_ouchtree, regimes=remove_nearctic_oum_regimes)
-
-## Now do the fitting using ouch
-
-## OUM: AICc = 762.9, alpha = 458.6, sigma.sq = 2628906, Acanths = 201, Nematodes = 52.8, Platys = 119
-remove_nearctic_oum_ouch <- hansen(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree, regimes=remove_nearctic_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 778.5, alpha = 2.63, sigma.sq = 26815.8, global = 99.04
-remove_nearctic_ou1_ouch <- hansen(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree, regimes=remove_nearctic_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 782.6, sigma.sq = 15840
-remove_nearctic_bm_ouch <- brown(data=remove_nearctic_ouchdata, tree=remove_nearctic_ouchtree)
-
-#######################################
-
-###GLOBAL DATASET####
-
-#match GMPD data to the global tree
-k<-GMPDsmall[match(global_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
-
-#make Phyla dataframe (names, regimes, trait)
-global_phyla_data<-data.frame(global_tree$tip.label)
-global_phyla_data$regime<-k$ParPhylum
-global_phyla_data$trait<-global.para.mpd
-
-## Painting taxonomy-based regimes onto this tree
-global_ouchtree <- ape2ouch(global_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-global_ouchdata <- rep(NA, length=global_ouchtree@nnodes)
-for (i in 1:length(global_phyla_data$global_tree.tip.label))
-  global_ouchdata[which(global_ouchtree@nodelabels==global_phyla_data$global_tree.tip.label[i])] <- global_phyla_data$trait[i]
-global_ouchdata <- as.data.frame(global_ouchdata)
-
-## You can use the code above, replacing nearctic with global, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
-
-## paint the regimes onto the tree
-paint(global_ouchtree, subtree=c("1"="Platys","227"="Nematodes","243"="Acanths"), branch=c("1"="Platys")) -> global_oum_regimes
-## global regime
-paint(global_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> global_ou1_regimes
-## Plot it to make sure it looks good
-plot(global_ouchtree, regimes=global_oum_regimes)
-
-## Now do the fitting using ouch
-## OUM: AICc = 2480.3, alpha = 16.8, sigma.sq = 42480.8, Acanths = 24.8, Nematodes = 21.7, Platys = 47.6
-global_oum_ouch <- hansen(data=global_ouchdata, tree=global_ouchtree, regimes=global_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 2490.3, alpha = 9.14, sigma.sq = 26943.6, global = 33.3 
-global_ou1_ouch <- hansen(data=global_ouchdata, tree=global_ouchtree, regimes=global_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 2571.44, sigma.sq = 12334.6
-global_bm_ouch <- brown(data=global_ouchdata, tree=global_ouchtree)
-
-#######################################
-
-##with single host species MPD removed
-
-#match GMPD data to the remove_global tree
-l<-GMPDsmall[match(remove_global_tree$tip.label, GMPDsmall$ParasiteCorrectedName),]
-
-#make Phyla dataframe for OUwie (names, regimes, trait)
-remove_global_phyla_data<-data.frame(remove_global_tree$tip.label)
-remove_global_phyla_data$regime<-l$ParPhylum
-remove_global_phyla_data$trait<-global.para.mpd.remove
-
-## Prepare for ouch
-remove_global_ouchtree <- ape2ouch(remove_global_tree) ## convert to ouchtree object
-## get the mpd data organized properly for ouch
-remove_global_ouchdata <- rep(NA, length=remove_global_ouchtree@nnodes)
-for (i in 1:length(remove_global_phyla_data$remove_global_tree.tip.label))
-  remove_global_ouchdata[which(remove_global_ouchtree@nodelabels==remove_global_phyla_data$remove_global_tree.tip.label[i])] <- remove_global_phyla_data$trait[i]
-remove_global_ouchdata <- as.data.frame(remove_global_ouchdata)
-
-## You can use the code above, replacing nearctic with remove_global, to find the last common ancestor for Platyhelminthes, Acanthocephalans, and Nematodes. I drop those blocks of code here to reduce the amount of code.
-
-
-## paint the regimes onto the tree
-paint(remove_global_ouchtree, subtree=c("1"="Platys","150"="Nematodes","155"="Acanths"), branch=c("1"="Platys")) -> remove_global_oum_regimes
-## global regime
-paint(remove_global_ouchtree, subtree=c("1"="global"), branch=c("1"="global")) -> remove_global_ou1_regimes
-
-## Plot it to make sure it looks good
-plot(remove_global_ouchtree, regimes=remove_global_oum_regimes)
-
-## Now do the fitting using ouch
-## OUM: AICc = 1539.6, alpha = 6.49, sigma.sq = 13769.8, Acanths = 67.7, Nematodes = 37.5, Platys = 68.2
-remove_global_oum_ouch <- hansen(data=remove_global_ouchdata, tree=remove_global_ouchtree, regimes=remove_global_oum_regimes, sqrt.alpha=100, sigma=100)
-
-## OU1: AICc = 1543.6, alpha = 4.55, sigma.sq = 11222.8, global = 54.8 
-remove_global_ou1_ouch <- hansen(data=remove_global_ouchdata, tree=remove_global_ouchtree, regimes=remove_global_ou1_regimes, sqrt.alpha=100, sigma=100)
-
-## BM: AICc = 1563.4, sigma.sq = 6267.8
-remove_global_bm_ouch <- brown(data=remove_global_ouchdata, tree=remove_global_ouchtree)
-
-## Load all of the bootstrap data
+**Supplemental Figure 2.** The likelihood ratio distributions for BM versus OU(3). 
+```{r plot_bm_vs_oum, fig.height=3, fig.width=6, units='in', res=300, echo = FALSE}
+#load data
+gmpd_bm_ouch <- readRDS("gmpd_bm_ouch")
+gmpd_ou1_ouch <- readRDS("gmpd_ou1_ouch")
+gmpd_oum_ouch <-readRDS("gmpd_oum_ouch")
+nearctic_ou1_ouch <- readRDS("nearctic_ou1_ouch")
+nearctic_bm_ouch <- readRDS("nearctic_bm_ouch")
+nearctic_oum_ouch <-readRDS("nearctic_oum_ouch")
+
+#bootstraps
 fit_oum_model_to_oum_data_nearctic <- readRDS(file="bootstrap_results/fit_oum_model_to_oum_data_nearctic.RDS")
 fit_oum_model_to_ou1_data_nearctic <- readRDS(file="bootstrap_results/fit_oum_model_to_ou1_data_nearctic.RDS")
 fit_oum_model_to_bm_data_nearctic <- readRDS(file="bootstrap_results/fit_oum_model_to_bm_data_nearctic.RDS")
@@ -930,91 +68,21 @@ fit_ou1_model_to_ou1_data_nearctic <- readRDS(file="bootstrap_results/fit_ou1_mo
 fit_bm_model_to_oum_data_nearctic <- readRDS(file="bootstrap_results/fit_bm_model_to_oum_data_nearctic.RDS")
 fit_bm_model_to_bm_data_nearctic <- readRDS(file="bootstrap_results/fit_bm_model_to_bm_data_nearctic.RDS")
 
-fit_oum_model_to_oum_data_remove_nearctic <- readRDS(file="bootstrap_results/fit_oum_model_to_oum_data_remove_nearctic.RDS")
-fit_oum_model_to_ou1_data_remove_nearctic <- readRDS(file="bootstrap_results/fit_oum_model_to_ou1_data_remove_nearctic.RDS")
-fit_oum_model_to_bm_data_remove_nearctic <- readRDS(file="bootstrap_results/fit_oum_model_to_bm_data_remove_nearctic.RDS")
-fit_ou1_model_to_oum_data_remove_nearctic <- readRDS(file="bootstrap_results/fit_ou1_model_to_oum_data_remove_nearctic.RDS")
-fit_ou1_model_to_ou1_data_remove_nearctic <- readRDS(file="bootstrap_results/fit_ou1_model_to_ou1_data_remove_nearctic.RDS")
-fit_bm_model_to_oum_data_remove_nearctic <- readRDS(file="bootstrap_results/fit_bm_model_to_oum_data_remove_nearctic.RDS")
-fit_bm_model_to_bm_data_remove_nearctic <- readRDS(file="bootstrap_results/fit_bm_model_to_bm_data_remove_nearctic.RDS")
 
-fit_oum_model_to_oum_data_global <- readRDS(file="bootstrap_results/fit_oum_model_to_oum_data_global.RDS")
-fit_oum_model_to_ou1_data_global <- readRDS(file="bootstrap_results/fit_oum_model_to_ou1_data_global.RDS")
-fit_oum_model_to_bm_data_global <- readRDS(file="bootstrap_results/fit_oum_model_to_bm_data_global.RDS")
-fit_ou1_model_to_oum_data_global <- readRDS(file="bootstrap_results/fit_ou1_model_to_oum_data_global.RDS")
-fit_ou1_model_to_ou1_data_global <- readRDS(file="bootstrap_results/fit_ou1_model_to_ou1_data_global.RDS")
-fit_bm_model_to_oum_data_global <- readRDS(file="bootstrap_results/fit_bm_model_to_oum_data_global.RDS")
-fit_bm_model_to_bm_data_global <- readRDS(file="bootstrap_results/fit_bm_model_to_bm_data_global.RDS")
+fit_oum_model_to_oum_data_gmpd <- readRDS(file="bootstrap_results/fit_oum_model_to_oum_data_gmpd.RDS")
+fit_oum_model_to_ou1_data_gmpd <- readRDS(file="bootstrap_results/fit_oum_model_to_ou1_data_gmpd.RDS")
+fit_oum_model_to_bm_data_gmpd <- readRDS(file="bootstrap_results/fit_oum_model_to_bm_data_gmpd.RDS")
+fit_ou1_model_to_oum_data_gmpd <- readRDS(file="bootstrap_results/fit_ou1_model_to_oum_data_gmpd.RDS")
+fit_ou1_model_to_ou1_data_gmpd <- readRDS(file="bootstrap_results/fit_ou1_model_to_ou1_data_gmpd.RDS")
+fit_bm_model_to_oum_data_gmpd <- readRDS(file="bootstrap_results/fit_bm_model_to_oum_data_gmpd.RDS")
+fit_bm_model_to_bm_data_gmpd <- readRDS(file="bootstrap_results/fit_bm_model_to_bm_data_gmpd.RDS")
 
-fit_oum_model_to_oum_data_remove_global <- readRDS(file="bootstrap_results/fit_oum_model_to_oum_data_remove_global.RDS")
-fit_oum_model_to_ou1_data_remove_global <- readRDS(file="bootstrap_results/fit_oum_model_to_ou1_data_remove_global.RDS")
-fit_oum_model_to_bm_data_remove_global <- readRDS(file="bootstrap_results/fit_oum_model_to_bm_data_remove_global.RDS")
-fit_ou1_model_to_oum_data_remove_global <- readRDS(file="bootstrap_results/fit_ou1_model_to_oum_data_remove_global.RDS")
-fit_ou1_model_to_ou1_data_remove_global <- readRDS(file="bootstrap_results/fit_ou1_model_to_ou1_data_remove_global.RDS")
-fit_bm_model_to_oum_data_remove_global <- readRDS(file="bootstrap_results/fit_bm_model_to_oum_data_remove_global.RDS")
-fit_bm_model_to_bm_data_remove_global <- readRDS(file="bootstrap_results/fit_bm_model_to_bm_data_remove_global.RDS")
-
-## If we treat BM as the null model, then we can compute the likelihood differences observed when BM is true to the observed likelihood difference in the real data to determine a p-value
-## 1. Compute the likelihood difference between the BM model fit to the BM data and the OU model fit to the BM data for all simulated datasets
-## 2. Compute the likelihood difference between the BM model fit to the real data and the OU model fit to the real data
-## 3. The number of likelihood differences computed in step #1 that are larger than the observed likelihood difference divided by the total number of simulated datasets gives an estimate of the p-value of the test (since the p-value is the probability of observing a dataset as extreme as the real one, assuming that the null model [BM] is true)
-(((fit_bm_model_to_bm_data_global$logLik-fit_oum_model_to_bm_data_global$logLik) < (global_bm_ouch@loglik - global_oum_ouch@loglik)) %>% sum)/nrow(fit_bm_model_to_bm_data_global) -> p_value_bm_vs_oum_global #0 
-
-(((fit_bm_model_to_bm_data_remove_global$logLik-fit_oum_model_to_bm_data_remove_global$logLik) < (remove_global_bm_ouch@loglik - remove_global_oum_ouch@loglik)) %>% sum)/nrow(fit_bm_model_to_bm_data_remove_global) -> p_value_bm_vs_oum_remove_global #0
-
-(((fit_bm_model_to_bm_data_nearctic$logLik-fit_oum_model_to_bm_data_nearctic$logLik) < (nearctic_bm_ouch@loglik - nearctic_oum_ouch@loglik)) %>% sum)/nrow(fit_bm_model_to_bm_data_nearctic) -> p_value_bm_vs_oum_nearctic #0
-
-(((fit_bm_model_to_bm_data_remove_nearctic$logLik-fit_oum_model_to_bm_data_remove_nearctic$logLik) < (remove_nearctic_bm_ouch@loglik - remove_nearctic_oum_ouch@loglik)) %>% sum)/nrow(fit_bm_model_to_bm_data_remove_nearctic) -> p_value_bm_vs_oum_remove_nearctic #0.002
-
-## If we treat OU1 as the null model, then we can compute the likelihood differences observed when OU1 is true to the observed likelihood difference in the real data to determine a p-value
-## 1. Compute the likelihood difference between the OU1 model fit to the OU1 data and the OUM model fit to the OU1 data for all simulated datasets
-## 2. Compute the likelihood difference between the OU1 model fit to the real data and the OUM model fit to the real data
-## 3. The number of likelihood differences computed in step #1 that are larger than the observed likelihood difference divided by the total number of simulated datasets gives an estimate of the p-value of the test (since the p-value is the probability of observing a dataset as extreme as the real one, assuming that the null model [BM] is true)
-(((fit_ou1_model_to_ou1_data_global$logLik-fit_oum_model_to_ou1_data_global$logLik) < (global_ou1_ouch@loglik - global_oum_ouch@loglik)) %>% sum)/nrow(fit_ou1_model_to_ou1_data_global) -> p_value_ou1_vs_oum_global #0.003 
-
-(((fit_ou1_model_to_ou1_data_remove_global$logLik-fit_oum_model_to_ou1_data_remove_global$logLik) < (remove_global_ou1_ouch@loglik - remove_global_oum_ouch@loglik)) %>% sum)/nrow(fit_ou1_model_to_ou1_data_remove_global) -> p_value_ou1_vs_oum_remove_global #0
-
-(((fit_ou1_model_to_ou1_data_nearctic$logLik-fit_oum_model_to_ou1_data_nearctic$logLik) < (nearctic_ou1_ouch@loglik - nearctic_oum_ouch@loglik)) %>% sum)/nrow(fit_ou1_model_to_ou1_data_nearctic) -> p_value_ou1_vs_oum_nearctic #0.008 
-
-(((fit_ou1_model_to_ou1_data_remove_nearctic$logLik-fit_oum_model_to_ou1_data_remove_nearctic$logLik) < (remove_nearctic_ou1_ouch@loglik - remove_nearctic_oum_ouch@loglik)) %>% sum)/nrow(fit_ou1_model_to_ou1_data_remove_nearctic) -> p_value_ou1_vs_oum_remove_nearctic #0
-
-## Computing the power of a test that rejects the BM model with a false positive rate of 5%
-## 1. Using the likelihood differences above for the BM and OU models fit to BM data, find the likelihood difference in the 5th percentile
-## 2. Compute the likelihood difference between the BM model fit to the OU data and the OU model fit to the OU data for all simulated datasets
-## 3. The number of likelihood differences computed in step #2 that are larger than the 5th percentile likelihood difference divided by the total number of simulated datasets gives an estimate of the power of the test
-(((-2*(fit_bm_model_to_oum_data_global$logLik - fit_oum_model_to_oum_data_global$logLik)) > sort(-2*(fit_bm_model_to_bm_data_global$logLik-fit_oum_model_to_bm_data_global$logLik))[950]) %>% sum)/1000 -> power_to_reject_bm_global #1
-
-(((-2*(fit_bm_model_to_oum_data_remove_global$logLik - fit_oum_model_to_oum_data_remove_global$logLik)) > sort(-2*(fit_bm_model_to_bm_data_remove_global$logLik-fit_oum_model_to_bm_data_remove_global$logLik))[950]) %>% sum)/1000 -> power_to_reject_bm_remove_global #0.999
-
-(((-2*(fit_bm_model_to_oum_data_nearctic$logLik - fit_oum_model_to_oum_data_nearctic$logLik)) > sort(-2*(fit_bm_model_to_bm_data_nearctic$logLik-fit_oum_model_to_bm_data_nearctic$logLik))[950]) %>% sum)/1000 -> power_to_reject_bm_nearctic #1
-
-(((-2*(fit_bm_model_to_oum_data_remove_nearctic$logLik - fit_oum_model_to_oum_data_remove_nearctic$logLik)) > sort(-2*(fit_bm_model_to_bm_data_remove_nearctic$logLik-fit_oum_model_to_bm_data_remove_nearctic$logLik))[950]) %>% sum)/1000 -> power_to_reject_bm_remove_nearctic #1
-
-
-## Computing the power of a test that rejects the OU1 model with a false positive rate of 5%
-## 1. Using the likelihood differences above for the OU1 and OUM models fit to OU1 data, find the likelihood difference in the 5th percentile
-## 2. Compute the likelihood difference between the OU1 model fit to the OUM data and the OUM model fit to the OUM data for all simulated datasets
-## 3. The number of likelihood differences computed in step #2 that are larger than the 5th percentile likelihood difference divided by the total number of simulated datasets gives an estimate of the power of the test
-(((-2*(fit_ou1_model_to_oum_data_global$logLik - fit_oum_model_to_oum_data_global$logLik)) > sort(-2*(fit_ou1_model_to_ou1_data_global$logLik-fit_oum_model_to_ou1_data_global$logLik))[950]) %>% sum)/1000 -> power_to_reject_ou1_global # 0.988
-
-(((-2*(fit_ou1_model_to_oum_data_remove_global$logLik - fit_oum_model_to_oum_data_remove_global$logLik)) > sort(-2*(fit_ou1_model_to_ou1_data_remove_global$logLik-fit_oum_model_to_ou1_data_remove_global$logLik))[950]) %>% sum)/1000 -> power_to_reject_ou1_remove_global #0.847
-
-(((-2*(fit_ou1_model_to_oum_data_nearctic$logLik - fit_oum_model_to_oum_data_nearctic$logLik)) > sort(-2*(fit_ou1_model_to_ou1_data_nearctic$logLik-fit_oum_model_to_ou1_data_nearctic$logLik))[950]) %>% sum)/1000 -> power_to_reject_ou1_nearctic # 0.917
-
-(((-2*(fit_ou1_model_to_oum_data_remove_nearctic$logLik - fit_oum_model_to_oum_data_remove_nearctic$logLik)) > sort(-2*(fit_ou1_model_to_ou1_data_remove_nearctic$logLik-fit_oum_model_to_ou1_data_remove_nearctic$logLik))[950]) %>% sum)/1000 -> power_to_reject_ou1_remove_nearctic #0.997
-```
-
-
-\newpage
-Supplemental Figure 2. The likelihood ratio distributions for BM versus OU(3). 
-```{r plot_bm_vs_oum, fig.height=4, fig.width=5, units='in', res=300, echo = FALSE}
-
-## Plot the distributions of likelihood differences between BM and OUM for the four different datasets
-par(mar=c(3,3,2,1), oma=rep(0,4), mfrow=c(2,2))
-## Global
-delta <- -2*(global_bm_ouch@loglik - global_oum_ouch@loglik)
-delta.dist <- -2*(fit_bm_model_to_bm_data_global$logLik - fit_oum_model_to_bm_data_global$logLik)
-delta.dist.2 <- -2*(fit_bm_model_to_oum_data_global$logLik - fit_oum_model_to_oum_data_global$logLik)
+## Plot the distributions of likelihood differences between BM and OUM for the different datasets
+par(mar=c(3,3,2,1), oma=rep(0,4), mfrow=c(1,2))
+## GMPD
+delta <- -2*(gmpd_bm_ouch@loglik - gmpd_oum_ouch@loglik)
+delta.dist <- -2*(fit_bm_model_to_bm_data_gmpd$logLik - fit_oum_model_to_bm_data_gmpd$logLik)
+delta.dist.2 <- -2*(fit_bm_model_to_oum_data_gmpd$logLik - fit_oum_model_to_oum_data_gmpd$logLik)
 d1 <- density(delta.dist)
 d2 <- density(delta.dist.2)
 plot.new()
@@ -1029,23 +97,6 @@ lines(d2$x, d2$y, col=gray(0.2))
 with(d2, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.2, alpha=0.5)))
 abline(v=delta, lwd=2, lty=2)
 legend(x='topright', c('BM','OU3'), fill=c(gray(0.7),gray(0.2)), bty='n', cex=0.75)
-
-delta <- -2*(remove_global_bm_ouch@loglik - remove_global_oum_ouch@loglik)
-delta.dist <- -2*(fit_bm_model_to_bm_data_remove_global$logLik - fit_oum_model_to_bm_data_remove_global$logLik)
-delta.dist.2 <- -2*(fit_bm_model_to_oum_data_remove_global$logLik - fit_oum_model_to_oum_data_remove_global$logLik)
-d1 <- density(delta.dist)
-d2 <- density(delta.dist.2)
-plot.new()
-plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
-axis(1);axis(2);box('plot')
-mtext(side=1, line=2, expression(delta))
-mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "GMPD (no single host)")
-lines(d1$x, d1$y, col=gray(0.7))
-with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
-lines(d2$x, d2$y, col=gray(0.2))
-with(d2, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.2, alpha=0.5)))
-abline(v=delta, lwd=2, lty=2)
 
 delta <- -2*(nearctic_bm_ouch@loglik - nearctic_oum_ouch@loglik)
 delta.dist <- -2*(fit_bm_model_to_bm_data_nearctic$logLik - fit_oum_model_to_bm_data_nearctic$logLik)
@@ -1063,37 +114,19 @@ with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[
 lines(d2$x, d2$y, col=gray(0.2))
 with(d2, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.2, alpha=0.5)))
 abline(v=delta, lwd=2, lty=2)
-
-delta <- -2*(remove_nearctic_bm_ouch@loglik - remove_nearctic_oum_ouch@loglik)
-delta.dist <- -2*(fit_bm_model_to_bm_data_remove_nearctic$logLik - fit_oum_model_to_bm_data_remove_nearctic$logLik)
-delta.dist.2 <- -2*(fit_bm_model_to_oum_data_remove_nearctic$logLik - fit_oum_model_to_oum_data_remove_nearctic$logLik)
-d1 <- density(delta.dist)
-d2 <- density(delta.dist.2)
-plot.new()
-plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
-axis(1);axis(2);box('plot')
-mtext(side=1, line=2, expression(delta))
-mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "Nearctic (no single host)")
-lines(d1$x, d1$y, col=gray(0.7))
-with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
-lines(d2$x, d2$y, col=gray(0.2))
-with(d2, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.2, alpha=0.5)))
-abline(v=delta, lwd=2, lty=2)
-
 ```
 
 
 \newpage
-Supplemental Figure 3. The likelihood ratio distributions for OU(1) versus OU(3). 
-```{r plot_ou1_vs_oum, fig.height=4, fig.width=5, units='in', res=300, echo = FALSE}
+**Supplemental Figure 3.** The likelihood ratio distributions for OU(1) versus OU(3). 
+```{r plot_ou1_vs_oum, fig.height=3, fig.width=6, units='in', res=300, echo = FALSE}
 
 ## Plot the distributions of likelihood differences between ou1 and OUM for the four different datasets
-par(mar=c(3,3,2,1), oma=rep(0,4), mfrow=c(2,2))
-## Global
-delta <- -2*(global_ou1_ouch@loglik - global_oum_ouch@loglik)
-delta.dist <- -2*(fit_ou1_model_to_ou1_data_global$logLik - fit_oum_model_to_ou1_data_global$logLik)
-delta.dist.2 <- -2*(fit_ou1_model_to_oum_data_global$logLik - fit_oum_model_to_oum_data_global$logLik)
+par(mar=c(3,3,2,1), oma=rep(0,4), mfrow=c(1,2))
+## GMPD
+delta <- -2*(gmpd_ou1_ouch@loglik - gmpd_oum_ouch@loglik)
+delta.dist <- -2*(fit_ou1_model_to_ou1_data_gmpd$logLik - fit_oum_model_to_ou1_data_gmpd$logLik)
+delta.dist.2 <- -2*(fit_ou1_model_to_oum_data_gmpd$logLik - fit_oum_model_to_oum_data_gmpd$logLik)
 d1 <- density(delta.dist)
 d2 <- density(delta.dist.2)
 plot.new()
@@ -1108,23 +141,6 @@ lines(d2$x, d2$y, col=gray(0.2))
 with(d2, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.2, alpha=0.5)))
 abline(v=delta, lwd=2, lty=2)
 legend(x='topright', c('OU1','OU3'), fill=c(gray(0.7),gray(0.2)), bty='n', cex=0.75)
-
-delta <- -2*(remove_global_ou1_ouch@loglik - remove_global_oum_ouch@loglik)
-delta.dist <- -2*(fit_ou1_model_to_ou1_data_remove_global$logLik - fit_oum_model_to_ou1_data_remove_global$logLik)
-delta.dist.2 <- -2*(fit_ou1_model_to_oum_data_remove_global$logLik - fit_oum_model_to_oum_data_remove_global$logLik)
-d1 <- density(delta.dist)
-d2 <- density(delta.dist.2)
-plot.new()
-plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
-axis(1);axis(2);box('plot')
-mtext(side=1, line=2, expression(delta))
-mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "GMPD (no single host)")
-lines(d1$x, d1$y, col=gray(0.7))
-with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
-lines(d2$x, d2$y, col=gray(0.2))
-with(d2, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.2, alpha=0.5)))
-abline(v=delta, lwd=2, lty=2)
 
 delta <- -2*(nearctic_ou1_ouch@loglik - nearctic_oum_ouch@loglik)
 delta.dist <- -2*(fit_ou1_model_to_ou1_data_nearctic$logLik - fit_oum_model_to_ou1_data_nearctic$logLik)
@@ -1142,30 +158,28 @@ with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[
 lines(d2$x, d2$y, col=gray(0.2))
 with(d2, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.2, alpha=0.5)))
 abline(v=delta, lwd=2, lty=2)
-
-delta <- -2*(remove_nearctic_ou1_ouch@loglik - remove_nearctic_oum_ouch@loglik)
-delta.dist <- -2*(fit_ou1_model_to_ou1_data_remove_nearctic$logLik - fit_oum_model_to_ou1_data_remove_nearctic$logLik)
-delta.dist.2 <- -2*(fit_ou1_model_to_oum_data_remove_nearctic$logLik - fit_oum_model_to_oum_data_remove_nearctic$logLik)
-d1 <- density(delta.dist)
-d2 <- density(delta.dist.2)
-plot.new()
-plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
-axis(1);axis(2);box('plot')
-mtext(side=1, line=2, expression(delta))
-mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "Nearctic (no single host)")
-lines(d1$x, d1$y, col=gray(0.7))
-with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
-lines(d2$x, d2$y, col=gray(0.2))
-with(d2, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.2, alpha=0.5)))
-abline(v=delta, lwd=2, lty=2)
-
 ```
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 \newpage
-Supplemental Table 1. Summary table for evolutionary models of MPD in the Nearctic dataset with single host taxa = 0 
+**Supplemental Table 1.** Summary table for evolutionary models of MPD in the Nearctic dataset
 ```{r echo = FALSE}
-##with single host species MPD = 0
 tibble(model=c("BM","OU1","OU3"),
        aicc=c(summary(nearctic_bm_ouch)$aic.c, 
               summary(nearctic_ou1_ouch)$aic.c,
@@ -1181,433 +195,284 @@ nearctic_aic_OU
 ```
 
 
-Supplemental Table 2. Summary table for evolutionary models of MPD in the Nearctic dataset with single host taxa removed
+**Supplemental Table 2.** Summary table for evolutionary models of MPD in the GMPD 
 ```{r echo = FALSE}
-##with single host species removed
+##with single host species MPD = 0
 tibble(model=c("BM","OU1","OU3"),
-       aicc=c(summary(remove_nearctic_bm_ouch)$aic.c, 
-              summary(remove_nearctic_ou1_ouch)$aic.c,
-              summary(remove_nearctic_oum_ouch)$aic.c)
+       aicc=c(summary(gmpd_bm_ouch)$aic.c, 
+              summary(gmpd_ou1_ouch)$aic.c,
+              summary(gmpd_oum_ouch)$aic.c)
        ) %>% 
   mutate(deltaaicc=aicc-min(aicc), 
          pow=exp(-.5*deltaaicc),
          sumpow=sum(pow),
          waicc=pow/sumpow) %>%
   dplyr::select(c(1,2,3,6)) %>%
-  arrange(desc(waicc)) -> remove_nearctic_aic_OU
-remove_nearctic_aic_OU
-```
-
-
-Supplemental Table 3. Summary table for evolutionary models of MPD in the GMPD with single host taxa = 0 
-```{r echo = FALSE}
-##with single host species MPD = 0
-tibble(model=c("BM","OU1","OU3"),
-       aicc=c(summary(global_bm_ouch)$aic.c, 
-              summary(global_ou1_ouch)$aic.c,
-              summary(global_oum_ouch)$aic.c)
-       ) %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(1,2,3,6)) %>%
-  arrange(desc(waicc)) -> global_aic_OU
-global_aic_OU
-```
-
-
-Supplemental Table 4. Summary table for evolutionary models of MPD in the GMPD with single host taxa removed
-```{r echo = FALSE}
-tibble(model=c("BM","OU1","OU3"),
-       aicc=c(summary(remove_global_bm_ouch)$aic.c, 
-              summary(remove_global_ou1_ouch)$aic.c,
-              summary(remove_global_oum_ouch)$aic.c)
-       ) %>% 
-  mutate(deltaaicc=aicc-min(aicc), 
-         pow=exp(-.5*deltaaicc),
-         sumpow=sum(pow),
-         waicc=pow/sumpow) %>%
-  dplyr::select(c(1,2,3,6)) %>%
-  arrange(desc(waicc)) -> remove_global_aic_OU
-remove_global_aic_OU
+  arrange(desc(waicc)) -> gmpd_aic_OU
+gmpd_aic_OU
 ```
 
 
 
+```{r zoonoses_figure, include=FALSE}
+#run 
+#interspecific distance matrix of parasites
+nearctic_dis_para<-cophenetic.phylo(nearctic_parasite_tree) 
 
-```{r adding_and_cleaning_host_and_parasite_trait_data, include = FALSE}
+#interspecific distance matrix of mammals 
+nearctic_dis_mam<-cophenetic.phylo(nearctic_mammal_tree) 
 
+## Create an association matrix with host across the columns and parasites across the rows
+nearctic_mamlist<-as.vector(nearctic_mammal_tree$tip.label) #list of mammals in tip label order
+nearctic_para_list<-as.vector(nearctic_parasite_tree$tip.label) #list of parasites
 
-#### Load parasite body size data from Benesh, Lafferty, and Kuris 2017 ####
-## Length and width measurments are in mm 
-benesh_data_para<- read_csv("Benesh_et_al_2017/ecy1680-sup-0001-datas1/CLC_database_lifehistory.csv")
-benesh_data_para$Host.species <-gsub(" ", "_", benesh_data_para$Host.species)
+#make a dataframe with host names as columns and parasite names as rows
+nearctic_df <- data.frame(matrix(ncol=length(nearctic_mamlist),nrow=length(nearctic_para_list)), row.names = nearctic_para_list)
+colnames(nearctic_df)<-nearctic_mamlist
 
-## remove parasites from Benesh et al. dataset that don't exist in the phylogeny
-setdiff(benesh_data_para$Parasite.species, GMPDsmall$ParasiteCorrectedName)->nothanks
-benesh_data_para[-which(benesh_data_para$Parasite.species %in% nothanks) ,] -> b_para_subset
+# complete dataframe with association data, 
+# where 0 = not found in host and 1 = found in host
+for (i in 1:nrow(nearctic_df))
+  nearctic_df[i,] <- (colnames(nearctic_df) %in% unique(subset(nearctic_data, Parasite==rownames(nearctic_df)[i])$Host)) %>% as.numeric
 
-## average the body size for rows that are the same species
-subset(b_para_subset, Sex=="f") %>%
-  group_by(Parasite.species) %>%
-  summarise(mean_l=mean(Length, na.rm = TRUE)) ->data_fem_len
+#save matrix
+write.csv(nearctic_df,file = "association_matrix_nearctic.csv", row.names = TRUE, col.names = TRUE)
 
-subset(b_para_subset, Sex=="f") %>%
-  group_by(Parasite.species) %>%
-  summarise(mean_w=mean(Width, na.rm = TRUE)) ->data_fem_wid
+## Create MPD scores for every parasite where single host parasites have a mpd = 0 (90taxa)
+nearctic_para_mpd <- mpd(nearctic_df, nearctic_dis_mam)
+nearctic_para_mpd[is.na(nearctic_para_mpd)] <- 0 ## one host species have an MPD of 0
+names(nearctic_para_mpd)<-nearctic_para_list
 
-## combine length and width to calculate 'body size' (L*W)?
-b.size<-left_join(data_fem_len, data_fem_wid, by="Parasite.species")
-b.size$ratio<-(b.size$mean_l*b.size$mean_w)
-
-write.csv(b.size, "bodysizepara.csv")
-
-
-#### Trim the tree to include only those parasite species for which there is body size data ####
-
-##nearctic mpd, single host = 0 
-setdiff(nearctic_tree$tip.label, b.size$Parasite.species)->no_body_size 
-nearctic_pgls <- drop.tip(nearctic_tree, nearctic_tree$tip.label[which(nearctic_tree$tip.label%in%no_body_size)])
-
-# make sure body size is in the same order as the parasite phylogeny
-nearctic.b.size <- b.size[match(nearctic_pgls$tip.label, b.size$Parasite.species),]
+## Create MPD scores for every host where hosts infected by only one parasite have a mpd = 0 (69 taxa)
+nearctic_mam_mpd <- mpd(t(nearctic_df), nearctic_dis_para)
+nearctic_mam_mpd[is.na(nearctic_mam_mpd)] <- 0 ## hosts infected by only one parasite have MPD of 0
+names(nearctic_mam_mpd)<-nearctic_mamlist
 
 
-##nearctic mpd, single host removed 
-setdiff(remove_nearctic_tree$tip.label, b.size$Parasite.species)->no_body_size1 
-remove_nearctic_pgls <- drop.tip(remove_nearctic_tree, remove_nearctic_tree$tip.label[which(remove_nearctic_tree$tip.label%in%no_body_size1)])
+##calculate the mpd of parasites and hosts!
+gmpd_dis_para<-cophenetic.phylo(gmpd_parasite_tree) #interspecific distance matrix of parasites
+gmpd_dis_mam<-cophenetic.phylo(gmpd_mammal_tree) #intespecific distance matrix of mammals from small tree
 
-# make sure body size is in the same order as the parasite phylogeny
-remove.nearctic.b.size <- b.size[match(remove_nearctic_pgls$tip.label, b.size$Parasite.species),]
+##make the pipeline to get the absence presence of each parasite (rows) that infect a given host (column)
+gmpd_mamlist<-as.vector(gmpd_mammal_tree$tip.label) #list of mammals in tip label order
+gmpd_para_list<-as.vector(gmpd_parasite_tree$tip.label)
+gmpd_df <- data.frame(matrix(ncol=length(gmpd_mamlist),nrow=length(gmpd_para_list)), row.names = gmpd_para_list)
+colnames(gmpd_df)<-gmpd_mamlist
+
+for (i in 1:nrow(gmpd_df))
+  gmpd_df[i,] <- (colnames(gmpd_df) %in% unique(subset(gmpd_data, ParasiteCorrectedName==rownames(gmpd_df)[i])$HostCorrectedName)) %>% as.numeric
+
+write.csv(gmpd_df,file = "gmpd_df.csv", row.names = TRUE, col.names = TRUE)
+
+## Create MPD scores for every parasite where single host parasites have a mpd = 0 (250 taxa)
+gmpd_para_mpd <- mpd(gmpd_df, gmpd_dis_mam)
+gmpd_para_mpd[is.na(gmpd_para_mpd)] <- 0 ## one host parasites have an mpd of 0
+names(gmpd_para_mpd)<-gmpd_para_list
+
+## Create MPD scores for every host where hosts infected by only one parasite have a mpd = 0 (199 taxa)
+gmpd_mam_mpd <- mpd(t(gmpd_df), gmpd_dis_para)
+gmpd_mam_mpd[is.na(gmpd_mam_mpd)] <- 0 ## hosts infected by only one parasite have MPD of 0
+names(gmpd_mam_mpd)<-gmpd_mamlist
+```
+
+```{r mammal_tree_with_host_mpd, include = FALSE}
+#### NEARCTIC DATASET ####
+#single parasite species have mpd = 0
+contMap(nearctic_mammal_tree, nearctic_mam_mpd, fsize=0.3, lwd =1)
+
+#### GLOBAL DATASET ####
+#single parasite species have mpd = 0
+contMap(gmpd_mammal_tree, gmpd_mam_mpd, fsize=0.3, lwd =1, type ="fan")
+```
+
+**Supplemental Figure 4.** Mean pairwise phylogenetic distance (MPD) of helminths infecting each mammal compared to their phylogenetic distance to humans in the GMPD and Nearctic dataset. *Didelphis virginiana* and *Didelphis marsupialis* are most distantly related to humans (PD = 380), thus were excluded from the figure.
+```{r, include = FALSE}
+#### GMPD ####
+# Calculate pairwise distance (PD) of each mammal to homo sapiens
+
+#subset PHYLACINE mammal tree to include GMPD mammals
+n<-gmpd_data[which(gmpd_data$HostCorrectedName %in% gmpd_mammal_tree$tip.label),]
+mammal_names<-unique(n$HostCorrectedName)
+mammal_names<-c(mammal_names, "Homo sapiens")
+
+#add full mammal tree to include humans
+full_mammal_tree<-read.nexus("mammal_phylo_consensus.nex")
+full_mammal_tree$tip.label<-gsub("_", " ", full_mammal_tree$tip.label)
+
+#subset the tree
+mammal_tree<-drop.tip(full_mammal_tree, full_mammal_tree$tip.label[which(!(full_mammal_tree$tip.label %in% mammal_names))])
+
+#calculate the pairwise distances
+mam_dis<-cophenetic.phylo(mammal_tree)
+
+#pull out the PD for each mammal to humans
+mam_dis2 = as.data.frame(mam_dis)
+distances<-mam_dis2[,"Homo sapiens"]
+names(distances)<-rownames(mam_dis2)
+#view(distances)
+
+#remove humans from distances
+distance2<-distances[names(distances) != "Homo sapiens"]
+
+#make a dataframe for the figure 
+figure_data<-data.frame("name"= names(gmpd_mam_mpd), "global.mpd" = gmpd_mam_mpd, "distance"= distance2)
+
+#species we want labeled in the figure
+important.names<-c("Procyon lotor",
+                   "Urocyon cinereoargenteus")
+
+#make dataset for the to-be-labeled points
+smaller_data<- figure_data[figure_data$name %in% important.names,]
+
+#load package to label figure datapoints
+
+summary_data <- figure_data %>% 
+  mutate(xy = paste0(global.mpd, "_", distance)) %>% group_by(xy) %>% 
+  dplyr::summarize(count = n()) %>%
+  separate(xy, into = c("global.mpd", "distance"), "_")
+
+summary_data$global.mpd <- as.numeric(summary_data$global.mpd)
+summary_data$distance <- as.numeric(summary_data$distance)
 
 
-##global mpd, single host = 0 
-setdiff(global_tree$tip.label, b.size$Parasite.species)->no_body_size2 
-global_pgls <- drop.tip(global_tree, global_tree$tip.label[which(global_tree$tip.label%in%no_body_size2)])
+new_fig_data <- merge(summary_data, figure_data, by = c("global.mpd", "distance"), all.y = TRUE)
+                                       
 
-# make sure body size is in the same order as the parasite phylogeny
-global.b.size <- b.size[match(global_pgls$tip.label, b.size$Parasite.species),]
-
-##global mpd, single host removed
-setdiff(remove_global_tree$tip.label, b.size$Parasite.species)->no_body_size3 
-remove_global_pgls <- drop.tip(remove_global_tree, remove_global_tree$tip.label[which(remove_global_tree$tip.label%in%no_body_size3)])
-
-# make sure body size is in the same order as the parasite phylogeny
-remove.global.b.size <- b.size[match(remove_global_pgls$tip.label, b.size$Parasite.species),]
-
-
-
-#### adding in host trait data (mass.g) from PHYLACINE ####
-#Faurby, S., Davis, M., Pedersen, R. Ø., Schowanek, S. D., Antonelli, A., & Svenning, J.C. (In Press). PHYLACINE 1.2: The Phylogenetic Atlas of Mammal Macroecology. Ecology
-#load mammal data
-Trait_data <- read_csv("Trait_data.csv")
-
-#correct for spaces in the binomial names
-Trait_data$Binomial.1.2<-gsub("_", " ", Trait_data$Binomial.1.2)
-
-#make column called "Host" in Trait_data
-Trait_data$HostCorrectedName<-Trait_data$Binomial.1.2
-
-#merge 
-left_join(GMPDsmall, Trait_data, by = "HostCorrectedName")->ss
-host_trait_data<-data.frame("Parasite" = ss$ParasiteCorrectedName,
-                            "Host" = ss$HostCorrectedName, 
-                            "Mass.g" = ss$Mass.g)
+MAM_FIG<-ggplot()+
+  geom_point(new_fig_data, mapping=aes(x=global.mpd, y= distance, size = count))+
+  geom_text_repel(smaller_data, mapping=aes(x=global.mpd, y=distance, label = name),
+                  size=2,
+                  vjust = 0,
+                  point.padding = .7)+
+  labs(title= "GMPD", y= "PD to Humans", x = "MPD")+
+  scale_y_continuous(limits = c(0,210))+
+  theme_bw()+
+  theme(legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))
 
 
-host_trait_data %>% 
-  group_by(Parasite) %>% 
-  summarise(avgMass=mean(Mass.g,na.rm=T)) -> Host_mass
+#### NEARCTIC DATASET ####
+#Calulate pairwise distance (PD) of each mammal to homo sapiens
+
+#subset PHYLACINE mammal tree to include GMPD mammals
+setdiff(full_mammal_tree$tip.label, colnames(nearctic_df))->group4
+
+#add back the the humans
+group5 <- group4[group4 != "Homo sapiens"]
+
+#subset the tree
+nearctic_mammal_tree<-drop.tip(full_mammal_tree, full_mammal_tree$tip.label[which(full_mammal_tree$tip.label%in%group5)])
+
+#calculate the pairwise distances
+nearctic_mam_dis<-cophenetic.phylo(nearctic_mammal_tree)
+
+#pull out the PD for each mammal to humans
+nearctic_mam_dis2 = as.data.frame(nearctic_mam_dis)
+nearctic_distances<-nearctic_mam_dis2[,"Homo sapiens"]
+names(nearctic_distances)<-rownames(nearctic_mam_dis2)
+#view(nearctic_distances)
+
+#remove humans from distances
+distance3<-nearctic_distances[names(nearctic_distances) != "Homo sapiens"]
+
+#make a dataframe for the figure 
+figure_data_2<-data.frame("name"= names(nearctic_mam_mpd), "nearctic.mpd" = nearctic_mam_mpd, "distance"= distance3)
+
+#species we want labeled in the figure
+nearctic.important.names<-c(#"Didelphis virginiana", 
+                            "Procyon lotor",
+                            #"Didelphis marsupialis", 
+                            #"Ursus americanus",
+                            "Urocyon cinereoargenteus")
+
+#make dataset for the to-be-labeled points
+nearctic_smaller_data<- figure_data_2[figure_data_2$name %in% nearctic.important.names,]
+
+nearctic_summary_data <- figure_data_2 %>% 
+  mutate(xy = paste0(nearctic.mpd, "_", distance)) %>% group_by(xy) %>% 
+  dplyr::summarize(count = n()) %>%
+  separate(xy, into = c("nearctic.mpd", "distance"), "_")
+
+nearctic_summary_data$nearctic.mpd <- as.numeric(nearctic_summary_data$nearctic.mpd)
+nearctic_summary_data$distance <- as.numeric(nearctic_summary_data$distance)
+
+nearctic_fig_data <- merge(nearctic_summary_data, figure_data_2, by = c("nearctic.mpd", "distance"), all.y = TRUE)
+                                       
+NEARCTIC_MAM<-ggplot()+
+  geom_point(nearctic_summary_data, mapping=aes(x=nearctic.mpd, y= distance, size = count))+
+  geom_text_repel(nearctic_smaller_data, mapping=aes(x=nearctic.mpd, y=distance, label = name),
+                  size=2,
+                  vjust = .4,
+                  point.padding = .05)+
+  labs(title = "Nearctic", y= "PD to Humans", x = "MPD")+
+  scale_y_continuous(limits = c(0,210))+
+  theme_bw()+
+  theme(legend.position = "none", 
+        panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))
 
 
-##subset host data for each group
+################################
+#### ADD THE PLOTS TOGETHER ####
+################################
+```
 
-#nearctic with single hosts = 0
-setdiff(Host_mass$Parasite, nearctic_pgls$tip.label)-> getout
-nearctic_traits<-Host_mass[-which(Host_mass$Parasite %in% getout),]
-#put in tree tip label order
-nearctic_traits <- nearctic_traits[match(nearctic_pgls$tip.label, nearctic_traits$Parasite),]
-
-
-#nearctic with single hosts removed
-setdiff(Host_mass$Parasite, remove_nearctic_pgls$tip.label)-> getout1
-remove_nearctic_traits<-Host_mass[-which(Host_mass$Parasite %in% getout1),]
-#put in tree tip label order
-remove_nearctic_traits <- remove_nearctic_traits[match(remove_nearctic_pgls$tip.label, remove_nearctic_traits$Parasite),]
-
-
-#global with single hosts = 0
-global_traits<-Host_mass
-#put in tree tip label order
-global_traits <- global_traits[match(global_pgls$tip.label, global_traits$Parasite),]
-
-
-#global with single hosts removed
-setdiff(Host_mass$Parasite, remove_global_pgls$tip.label)-> getout2
-remove_global_traits<-Host_mass[-which(Host_mass$Parasite %in% getout2),]
-#put in tree tip label order
-remove_global_traits <- remove_global_traits[match(remove_global_pgls$tip.label, remove_global_traits$Parasite),]
-
-
-#### clean parasite transmission data ####
-
-#nearctic with single hosts = 0
-nearctic_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% nearctic_pgls$tip.label),]
-nearctic_trans<-nearctic_trans[match(nearctic_pgls$tip.label, nearctic_trans$CorrectName),]
-
-#neartic with single species removed
-remove_nearctic_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% remove_nearctic_pgls$tip.label),]
-remove_nearctic_trans<-remove_nearctic_trans[match(remove_nearctic_pgls$tip.label, remove_nearctic_trans$CorrectName),]
-
-
-#global with single hosts = 0
-global_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% global_pgls$tip.label),]
-global_trans<-global_trans[match(global_pgls$tip.label, global_trans$CorrectName),]
-
-#global with single species removed
-remove_global_trans<-GMPDparasite[which(GMPDparasite$CorrectName %in% remove_global_pgls$tip.label),]
-remove_global_trans<-remove_global_trans[match(remove_global_pgls$tip.label, remove_global_trans$CorrectName),]
-
-###NEARCTIC DATASET####
-
-##with single host species MPD = 0
-
-#clean nearctic.mam.mpd
-pgls.nearctic.para.mpd<-nearctic.para.mpd[match(nearctic_pgls$tip.label, names(nearctic.para.mpd))]
-
-nearctic_dat<-data.frame(taxa=nearctic_pgls$tip.label,
-                para.mpd=pgls.nearctic.para.mpd,
-                para.l=nearctic.b.size$mean_l,
-                para.w=nearctic.b.size$mean_w,
-                para.b=nearctic.b.size$ratio,
-                close=as.factor(nearctic_trans$close),
-                nonclose=as.factor(nearctic_trans$nonclose),
-                intermediate=as.factor(nearctic_trans$intermediate),
-                host_mass=nearctic_traits$avgMass)
-
-## constructs the data.frame of the taxa names and data in the order of the tree tips
-nearctic_cdat<-comparative.data(data=nearctic_dat, phy=nearctic_pgls, names.col = "taxa")
-print(nearctic_cdat)
-
-## model testing ##
-
-#all predictors
-nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, nearctic_cdat, lambda = .384)
-summary(nearctic_mod)
-anova(nearctic_mod)
-
-#removed parasite length 
-nearctic_mod2<-pgls(para.mpd ~ close + nonclose + intermediate + host_mass, nearctic_cdat, lambda=.384) #host mass is significant
-summary(nearctic_mod2)
-anova(nearctic_mod2)
-
-#removed parasite length and close transmission
-nearctic_mod3<-pgls(para.mpd ~ nonclose + intermediate + host_mass, nearctic_cdat, lambda=.384) 
-summary(nearctic_mod3)
-anova(nearctic_mod3)
-
-anova(nearctic_mod2, nearctic_mod3)
-
-#removed parasite length and close transmission + intermediate ##### BEST MODEL #####
-nearctic_mod4<-pgls(para.mpd ~ nonclose + host_mass, nearctic_cdat, lambda=.384) 
-summary(nearctic_mod4)
-anova(nearctic_mod4)
-
-anova(nearctic_mod3, nearctic_mod4)
-
+```{r, echo = FALSE, warning=FALSE}
+MAM_FIG + NEARCTIC_MAM 
 ```
 
 
-Best model fit with PGLS for the Nearctic helminth phylogeny, with single host taxa included.
-```{r echo = FALSE}
-#only host mass ##### BEST MODEL #####
-nearctic_mod5<-pgls(para.mpd ~  host_mass, nearctic_cdat, lambda=.384) 
-summary(nearctic_mod5)
-#anova(nearctic_mod5)
+```{r descriptive_mammal_results, include = FALSE}
+#####GMPD#####
 
+#How many host are only infected by one helminth?
+figure_data #197 species
+single<-subset(figure_data, figure_data$global.mpd == 0)
+single #75 species
+
+75/197
+
+## Nearctic ##
+
+#How many host are only infected by one helminth?
+figure_data_2 #67 species
+single_2<-subset(figure_data_2, figure_data_2$nearctic.mpd == 0)
+single_2 #75 species
+
+19/67
 ```
 
 
+```{r specify_helminths_in_the_high_risk_mammals, include = FALSE}
+####What helminths infect the "high-risk" data point?####
+gmpd_df %>%
+  as.data.frame ->help
 
-```{r pgls_nearctic_shR, include=FALSE}
-###NEARCTIC DATASET####
+#Saguinus mystax infected by two
+help$'Saguinus mystax' == 1 #27 and 210 
+help[27,]  #Dipetalonema graciliformis (mpd == 18.14)
+help[210,] #Hymenolepis diminuta (mpd == 96.2)
 
-##with single host species removed
+#Macaca fascicularis infected by four
+help$'Macaca fascicularis' == 1 #86, 136, 164, 200
+help[86,]  #Oesophagostomum aculeatum
+help[136,] #Strongyloides fuelleborni
+help[164,] #Trichuris trichiura (mpd == 37.97)
+help[200,] #Paragonimus westermani
 
-#clean nearctic.mam.mpd
-pgls.remove.n.para.mpd<-nearctic.para.mpd[match(remove_nearctic_pgls$tip.label, names(nearctic.para.mpd.remove))]
+#Macaca cyclopis infected by two
+help$'Macaca cyclopis' == 1
+help[50,]  #Enterobius macaci (mpd == 3.61)
+help[200,] #Paragonimus westermani
 
-remove_nearctic_dat<-data.frame(taxa=remove_nearctic_pgls$tip.label,
-                para.mpd=pgls.remove.n.para.mpd,
-                para.l=remove.nearctic.b.size$mean_l,
-                para.w=remove.nearctic.b.size$mean_w,
-                para.b=remove.nearctic.b.size$ratio,
-                close=as.factor(remove_nearctic_trans$close),
-                nonclose=as.factor(remove_nearctic_trans$nonclose),
-                intermediate=as.factor(remove_nearctic_trans$intermediate),
-                host_mass=remove_nearctic_traits$avgMass)
+#Alouatta seniculus infected by two
+help$'Alouatta seniculus' == 1  #55, 164
+help[55,]  #Trypanoxyuris minutus (mpd == 18.79)
+help[164,] #Trichuris trichiura (mpd == 37.97)
 
-## constructs the data.frame of the taxa names and data in the order of the tree tips
-remove_nearctic_cdat<-comparative.data(data=remove_nearctic_dat, phy=remove_nearctic_pgls, names.col = "taxa")
-print(remove_nearctic_cdat)
-
-## model testing ##
-
-#all predictors 
-remove_nearctic_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_nearctic_cdat, lambda = .926)
-summary(remove_nearctic_mod)
-anova(remove_nearctic_mod)
-
-#removed host mass  ####### BEST MODEL #######
-remove_nearctic_mod2<-pgls(para.mpd~ para.l + close + nonclose + intermediate, remove_nearctic_cdat, lambda = .926)
-summary(remove_nearctic_mod2) 
-anova(remove_nearctic_mod2)
-
-anova(remove_nearctic_mod, remove_nearctic_mod2)
-
-
-#removed host mass and close transmission
-remove_nearctic_mod3<-pgls(para.mpd~ para.l + nonclose + intermediate , remove_nearctic_cdat, lambda = .926)
-summary(remove_nearctic_mod3) #worse model than ^^^
-anova(remove_nearctic_mod3)
-
+#Papio hamadryas
+help$'Papio hamadryas' == 1 #51, 211
+help[51,] #Enterobius vermicularis
+help[211,] #Hymenolepis nana (mpd == 0)
 ```
-
-Best model fit with PGLS for the Nearctic helminth phylogeny, without single host taxa.
-```{r echo=FALSE}
-remove_nearctic_mod2<-pgls(para.mpd~ para.l + close + nonclose + intermediate, remove_nearctic_cdat, lambda = .926)
-summary(remove_nearctic_mod2) 
-anova(remove_nearctic_mod2)
-```
-
-
-
-```{r pgls_global_sh0, include=FALSE}
-
-###GLOBAL DATASET####
-
-##with single host species MPD = 0
-
-#clean global.mam.mpd
-pgls.global.para.mpd<-global.para.mpd[match(global_pgls$tip.label, names(global.para.mpd))]
-
-global_dat<-data.frame(taxa=global_pgls$tip.label,
-                para.mpd=pgls.global.para.mpd,
-                para.l=global.b.size$mean_l,
-                para.w=global.b.size$mean_w,
-                para.b=global.b.size$ratio,
-                close=as.factor(global_trans$close),
-                nonclose=as.factor(global_trans$nonclose),
-                intermediate=as.factor(global_trans$intermediate),
-                host_mass=global_traits$avgMass)
-
-## constructs the data.frame of the taxa names and data in the order of the tree tips
-global_cdat<-comparative.data(data=global_dat, phy=global_pgls, names.col = "taxa")
-print(global_cdat)
-
-## model testing ##
-
-#all predictors
-global_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, global_cdat, lambda = .607)
-summary(global_mod)
-anova(global_mod)
-
-#removed host mass
-global_mod2 <- pgls(para.mpd~ para.l + close + nonclose + intermediate, global_cdat, lambda = .607)
-summary(global_mod2)
-anova(global_mod2)
-
-
-#removed nonclose and host mass
-global_mod3 <- pgls(para.mpd~ para.l + close + intermediate, global_cdat, lambda = .607)
-summary(global_mod3) 
-anova(global_mod3)
-
-#only parasite length and close transmission
-global_mod4<-pgls(para.mpd ~ para.l + close, global_cdat, lambda = .607)
-summary(global_mod4) 
-anova(global_mod4)
-
-#only close transmission  #### BEST MODEL ####
-global_mod5<-pgls(para.mpd ~ close, global_cdat, lambda = .607)
-summary(global_mod5) 
-anova(global_mod5)
-
-anova(global_mod4, global_mod5)
-
-
-```
-
-
-Best model fit with PGLS for the GMPD helminth phylogeny, with single host taxa included.
-```{r echo=FALSE}
-#only close transmission  #### BEST MODEL ####
-global_mod5<-pgls(para.mpd ~ close, global_cdat, lambda = .607)
-summary(global_mod5) 
-anova(global_mod5)
-```
-
-
-```{r include= FALSE}
-###GLOBAL DATASET####
-
-##with single host species removed
-
-#clean nearctic.mam.mpd
-pgls.remove.g.para.mpd<-global.para.mpd[match(remove_global_pgls$tip.label, names(global.para.mpd.remove))]
-
-remove_global_dat<-data.frame(taxa=remove_global_pgls$tip.label,
-                para.mpd=pgls.remove.g.para.mpd,
-                para.l=remove.global.b.size$mean_l,
-                para.w=remove.global.b.size$mean_w,
-                para.b=remove.global.b.size$ratio,
-                close=as.factor(remove_global_trans$close),
-                nonclose=as.factor(remove_global_trans$nonclose),
-                intermediate=as.factor(remove_global_trans$intermediate),
-                host_mass=remove_global_traits$avgMass)
-
-## constructs the data.frame of the taxa names and data in the order of the tree tips
-remove_global_cdat<-comparative.data(data=remove_global_dat, phy=remove_global_pgls, names.col = "taxa")
-print(remove_global_cdat)
-
-## model testing ##
-
-#all predictors
-remove_global_mod <- pgls(para.mpd~ para.l + close + nonclose + intermediate + host_mass, remove_global_cdat, lambda = .895)
-summary(remove_global_mod)
-anova(remove_global_mod)
-
-#removed host mass
-remove_global_mod2 <- pgls(para.mpd~ para.l + close + nonclose + intermediate, remove_global_cdat, lambda = .895)
-summary(remove_global_mod2) 
-anova(remove_global_mod2)
-
-
-#removed nonclose and host mass
-remove_global_mod3 <- pgls(para.mpd~ para.l + close + intermediate, remove_global_cdat, lambda = .895)
-summary(remove_global_mod3) 
-anova(remove_global_mod3)
-
-
-#just parasite length + close
-remove_global_mod4 <- pgls(para.mpd~ para.l  + close, remove_global_cdat, lambda = .895)
-summary(remove_global_mod4) 
-anova(remove_global_mod4)
-
-#just close transmission  #### BEST MODEL ####
-remove_global_mod5 <- pgls(para.mpd~ close, remove_global_cdat, lambda = .895)
-summary(remove_global_mod5) 
-anova(remove_global_mod5)
-
-```
-
-
-Best model fit with PGLS for the GMPD helminth phylogeny, without single host taxa.
-```{r echo=FALSE}
-#just close transmission  #### BEST MODEL ####
-remove_global_mod5 <- pgls(para.mpd~ close, remove_global_cdat, lambda = .895)
-summary(remove_global_mod5) 
-anova(remove_global_mod5)
-```
-
