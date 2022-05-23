@@ -1,0 +1,3 @@
+load("/Users/alainapfenning-butterworth/Documents/UNL/Dissertation_Data/ParasitePhylogeny/bootstrap_results/fit_ou1_model_to_ou1_data_remove_global.RDS")
+load("/Users/alainapfenning-butterworth/Documents/UNL/Dissertation_Data/ParasitePhylogeny/bootstrap_results/fit_oum_model_to_bm_data_remove_global.RDS")
+load("/Users/alainapfenning-butterworth/Documents/UNL/Dissertation_Data/ParasitePhylogeny/bootstrap_results/fit_oum_model_to_bm_data_remove_global.RDS")
