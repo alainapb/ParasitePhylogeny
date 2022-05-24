@@ -27,9 +27,9 @@ library(patchwork)
 
 
 
-**Supplmental Figure 1.** 249 taxa helminth molecular phylogeny
+**Supplmental Figure 1.** 250 taxa helminth molecular phylogeny
 
-```{r load_in_APBs_helminth_tree, echo=FALSE}
+```{r load_in_APBs_helminth_tree, fig.height=25, fig.width=7, units='in', res=300, echo=FALSE}
 ##load data
 gmpd_data<-readRDS("GMPD_data.RDS")
 nearctic_data<-readRDS("Nearctic_data.RDS")
@@ -39,7 +39,7 @@ nearctic_parasite_tree <- readRDS("Nearctic_parasite_tree.RDS")
 nearctic_mammal_tree <- readRDS("Nearctic_mammal_tree.RDS")
 gmpd_mammal_tree <- readRDS("GMPD_mammal_tree.RDS")
 
-plotTree(gmpd_parasite_tree, fsize =0.3, type = "fan")
+plotTree(gmpd_parasite_tree, fsize =0.8, lwd =3)
 ```
 
 
@@ -275,14 +275,20 @@ gmpd_mam_mpd[is.na(gmpd_mam_mpd)] <- 0 ## hosts infected by only one parasite ha
 names(gmpd_mam_mpd)<-gmpd_mamlist
 ```
 
-```{r mammal_tree_with_host_mpd, include = FALSE}
+
+Mammal phylogeny colored by the parasite range of each host for the Nearctic dataset (mammals infected by a single helminth have a value of 0)
+```{r mammal_tree_with_host_mpd, fig.height=7, fig.width=7, units='in', res=300, echo = FALSE}
 #### NEARCTIC DATASET ####
 #single parasite species have mpd = 0
-contMap(nearctic_mammal_tree, nearctic_mam_mpd, fsize=0.3, lwd =1)
+contMap(nearctic_mammal_tree, nearctic_mam_mpd, fsize=0.5, lwd =1)
+```
 
+
+Mammal phylogeny colored by the parasite range of each host for the GMPD (mammals infected by a single helminth have a value of 0)
+```{r , fig.height=15, fig.width=7, units='in', res=300, echo = FALSE}
 #### GLOBAL DATASET ####
 #single parasite species have mpd = 0
-contMap(gmpd_mammal_tree, gmpd_mam_mpd, fsize=0.3, lwd =1, type ="fan")
+contMap(gmpd_mammal_tree, gmpd_mam_mpd, fsize=0.5, lwd =1.2)
 ```
 
 **Supplemental Figure 4.** Mean pairwise phylogenetic distance (MPD) of helminths infecting each mammal compared to their phylogenetic distance to humans in the GMPD and Nearctic dataset. *Didelphis virginiana* and *Didelphis marsupialis* are most distantly related to humans (PD = 380), thus were excluded from the figure.
