@@ -312,6 +312,47 @@ anova(gls_para_pubs_nhosts_nearctic, gls_para_pubs_tree_nhosts_nearctic)
 anova(gls_host_pubs_nhosts_nearctic, gls_host_pubs_tree_nhosts_nearctic) #when using host pubs there is evidence for phylogenetic signal
 ```
 
+#View residual MPD on phylogeny
+```{r figures, echo = FALSE}
+#NEARCTIC DATASET
+res_mpd_nearctic<-gls_host_pubs_mpd_nearctic$residuals
+names(res_mpd_nearctic)<-nearctic_parasite_tree$tip.label
+
+#view mpd with single host species = 0 on the tree
+fig1<-contMap(nearctic_parasite_tree, res_mpd_nearctic, fsize= .3, lwd=1, leg.text="x", type="fan") 
+
+#color friendly
+library(viridis)
+n_cols <- n_distinct(res_mpd_nearctic)
+contmap_obj_viridis <- setMap(fig1, viridis(n_cols))
+
+# Plot the mapped characters with the new colors
+plot(
+  contmap_obj_viridis, 
+  type="fan", 
+  legend = 0.7*max(nodeHeights(nearctic_parasite_tree)),
+  fsize = c(0.3, 0.5),
+  lwd = 4)
+
+#GLOBAL DATASET
+res_mpd_gmpd<-gls_host_pubs_mpd_gmpd$residuals
+names(res_mpd_gmpd)<-gmpd_parasite_tree$tip.label
+
+#view mpd with single host species = 0 on the tree
+fig2 <-contMap(gmpd_parasite_tree, res_mpd_gmpd, fsize= .3,lwd=2, type="fan") 
+n_cols2 <- n_distinct(res_mpd_gmpd)
+contmap_obj_viridis2 <- setMap(fig2, viridis(n_cols2))
+
+# Plot the mapped characters with the new colors
+plot(
+  contmap_obj_viridis2, 
+  type="fan", 
+  legend = 0.7*max(nodeHeights(gmpd_parasite_tree)),
+  fsize = c(0.3, 0.5),
+  lwd = 4)
+```
+
+
 #Setting selective regimes based on Classes
 ```{r OU_setup, include = FALSE, eval = FALSE}
 g<-gmpd_data[match(nearctic_parasite_tree$tip.label, gmpd_data$ParasiteCorrectedName),]
@@ -1010,7 +1051,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "GMPD by Phyla")
+mtext(side=3, line=0.25, "GMPD (regimes by Phyla)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1028,7 +1069,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "Nearctic by Phyla")
+mtext(side=3, line=0.25, "Nearctic (regimes by Phyla)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1045,7 +1086,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "GMPD by Class")
+mtext(side=3, line=0.25, "GMPD (regimes by Class)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1063,7 +1104,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "Nearctic by Class")
+mtext(side=3, line=0.25, "Nearctic (regimes by Class)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1088,7 +1129,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "GMPD by Phyla")
+mtext(side=3, line=0.25, "GMPD (regimes by Phyla)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1106,7 +1147,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "Nearctic by Phyla")
+mtext(side=3, line=0.25, "Nearctic (regimes by Phyla)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1123,7 +1164,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "GMPD by Class")
+mtext(side=3, line=0.25, "GMPD (regimes by Class)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
@@ -1141,7 +1182,7 @@ plot.window(xlim=range(c(d1$x,d2$x)), ylim=range(c(d1$y,d2$y)))
 axis(1);axis(2);box('plot')
 mtext(side=1, line=2, expression(delta))
 mtext(side=2, line=2, 'Density')
-mtext(side=3, line=0.25, "Nearctic by Class")
+mtext(side=3, line=0.25, "Nearctic (regimes by Class)")
 lines(d1$x, d1$y, col=gray(0.7))
 with(d1, polygon(x=c(min(x), x[x<max(x)], rev(x[x<max(x)]), min(x)), y=c(0, 0*x[x<max(x)], rev(y[x<max(x)]), 0), col=gray(0.7, alpha=0.5)))
 lines(d2$x, d2$y, col=gray(0.2))
