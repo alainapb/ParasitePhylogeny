@@ -194,7 +194,7 @@ names(gmpd_mam_mpd)<-gmpd_mamlist
 #view mpd with single host species = 0 on the tree
 contMap(nearctic_parasite_tree, nearctic_para_mpd, fsize= .3, lwd=1, leg.text="x", type="fan") 
 
-#GLOBAL DATASET
+#GMPD
 #view mpd with single host species = 0 on the tree
 contMap(gmpd_parasite_tree, gmpd_para_mpd, fsize= .3,lwd=2, type="fan") 
 
@@ -334,7 +334,7 @@ plot(
   fsize = c(0.3, 0.5),
   lwd = 7)
 
-#GLOBAL DATASET
+#GMPD
 res_mpd_gmpd<-gls_host_pubs_mpd_gmpd$residuals
 names(res_mpd_gmpd)<-gmpd_parasite_tree$tip.label
 
@@ -436,9 +436,9 @@ nearctic_ou1_ouch <- hansen(data=nearctic_parasite_ouchdata, tree=nearctic_paras
 nearctic_bm_ouch <- brown(data=nearctic_parasite_ouchdata, tree=nearctic_parasite_ouchtree)
 
 #save for supplement
-saveRDS(nearctic_ou1_ouch, file ="nearctic_ou1_ouch")
-saveRDS(nearctic_bm_ouch, file = "nearctic_bm_ouch")
-saveRDS(nearctic_oum_ouch, file ="nearctic_oum_ouch")
+saveRDS(nearctic_ou1_ouch, file ="ouch_results/nearctic_ou1_ouch")
+saveRDS(nearctic_bm_ouch, file = "ouch_results/nearctic_bm_ouch")
+saveRDS(nearctic_oum_ouch, file ="ouch_results/nearctic_oum_ouch")
 ```
 
 #GMPD ouch Models of the residuals of gls(mpd ~ host pubs) by Phyla
@@ -472,9 +472,9 @@ gmpd_ou1_ouch <- hansen(data=gmpd_parasite_ouchdata, tree=gmpd_parasite_ouchtree
 gmpd_bm_ouch <- brown(data=gmpd_parasite_ouchdata, tree=gmpd_parasite_ouchtree)
 
 #save for supplement 
-saveRDS(gmpd_bm_ouch, file = "gmpd_bm_ouch")
-saveRDS(gmpd_ou1_ouch, file = "gmpd_ou1_ouch")
-saveRDS(gmpd_oum_ouch, file = "gmpd_oum_ouch")
+saveRDS(gmpd_bm_ouch, file = "ouch_results/gmpd_bm_ouch")
+saveRDS(gmpd_ou1_ouch, file = "ouch_results/gmpd_ou1_ouch")
+saveRDS(gmpd_oum_ouch, file = "ouch_results/gmpd_oum_ouch")
 ```
 
 
@@ -512,9 +512,9 @@ nearctic_ou1_class_ouch <- hansen(data=nearctic_class_ouchdata, tree=nearctic_cl
 nearctic_bm_class_ouch <- brown(data=nearctic_class_ouchdata, tree=nearctic_class_ouchtree)
 
 #save for supplement
-saveRDS(nearctic_ou1_class_ouch, file ="nearctic_ou1_class_ouch")
-saveRDS(nearctic_bm_class_ouch, file = "nearctic_bm_class_ouch")
-saveRDS(nearctic_oum_class_ouch, file ="nearctic_oum_class_ouch")
+saveRDS(nearctic_ou1_class_ouch, file ="ouch_results/nearctic_ou1_class_ouch")
+saveRDS(nearctic_bm_class_ouch, file = "ouch_results/nearctic_bm_class_ouch")
+saveRDS(nearctic_oum_class_ouch, file ="ouch_results/nearctic_oum_class_ouch")
 ```
 
 
@@ -550,9 +550,9 @@ gmpd_ou1_class_ouch <- hansen(data=gmpd_class_ouchdata, tree=gmpd_class_ouchtree
 gmpd_bm_class_ouch <- brown(data=gmpd_class_ouchdata, tree=gmpd_class_ouchtree)
 
 #save for supplement 
-saveRDS(gmpd_bm_class_ouch, file = "gmpd_bm_class_ouch")
-saveRDS(gmpd_ou1_class_ouch, file = "gmpd_ou1_class_ouch")
-saveRDS(gmpd_oum_class_ouch, file = "gmpd_oum_class_ouch")
+saveRDS(gmpd_bm_class_ouch, file = "ouch_results/gmpd_bm_class_ouch")
+saveRDS(gmpd_ou1_class_ouch, file = "ouch_results/gmpd_ou1_class_ouch")
+saveRDS(gmpd_oum_class_ouch, file = "ouch_results/gmpd_oum_class_ouch")
 ```
 
 #Bootstrapping Evolutionary models for both datasets

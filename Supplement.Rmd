@@ -52,12 +52,12 @@ plotTree(gmpd_parasite_tree, fsize =0.8, lwd =3)
 **Supplemental Figure 2.** The likelihood ratio distributions for BM versus OU(3). 
 ```{r plot_bm_vs_oum, fig.height=3, fig.width=6, units='in', res=300, echo = FALSE}
 #load data
-gmpd_bm_ouch <- readRDS("gmpd_bm_ouch")
-gmpd_ou1_ouch <- readRDS("gmpd_ou1_ouch")
-gmpd_oum_ouch <-readRDS("gmpd_oum_ouch")
-nearctic_ou1_ouch <- readRDS("nearctic_ou1_ouch")
-nearctic_bm_ouch <- readRDS("nearctic_bm_ouch")
-nearctic_oum_ouch <-readRDS("nearctic_oum_ouch")
+gmpd_bm_ouch <- readRDS("ouch_results/gmpd_bm_ouch")
+gmpd_ou1_ouch <- readRDS("ouch_results/gmpd_ou1_ouch")
+gmpd_oum_ouch <-readRDS("ouch_results/gmpd_oum_ouch")
+nearctic_ou1_ouch <- readRDS("ouch_results/nearctic_ou1_ouch")
+nearctic_bm_ouch <- readRDS("ouch_results/nearctic_bm_ouch")
+nearctic_oum_ouch <-readRDS("ouch_results/nearctic_oum_ouch")
 
 #bootstraps
 fit_oum_model_to_oum_data_nearctic <- readRDS(file="bootstrap_results/fit_oum_model_to_oum_data_nearctic.RDS")
