@@ -332,7 +332,7 @@ plot(
   type="fan", 
   legend = 0.7*max(nodeHeights(nearctic_parasite_tree)),
   fsize = c(0.3, 0.5),
-  lwd = 4)
+  lwd = 7)
 
 #GLOBAL DATASET
 res_mpd_gmpd<-gls_host_pubs_mpd_gmpd$residuals
@@ -1393,7 +1393,8 @@ dat<-data.frame(taxa=nearctic_parasite_tree$tip.label,
 nearctic_parasite_tree$node.label<-NULL
 cdat<-comparative.data(data=dat, phy=nearctic_parasite_tree, names.col = "taxa")
 
-summary(pgls(res ~  close + env + intermediate, cdat, lambda = "ML")) #Intermediate ***
+#90 taxa (AICc = 994.993)
+summary(nearctic_trans_mod<-pgls(res ~  close + env + intermediate, cdat, lambda = "ML")) #Intermediate ***
 anova(pgls(res ~  close + env + intermediate, cdat, lambda = "ML"))
 
 #### Dataset that includes parasite traits (length), subsets to 33 species ####
@@ -1413,10 +1414,10 @@ nearctic_cdat<-comparative.data(data=nearctic_dat, phy=nearctic_pgls, names.col 
 
 ## model testing ##
 
-#all predictors
+#all predictors (28 taxa)
 nearctic_mod <- pgls(res ~ close + env + intermediate + para.b + host_mass, nearctic_cdat, lambda = "ML")
-summary(nearctic_mod)
-anova(nearctic_mod) #environmental barely
+summary(nearctic_mod)  #AICc = 329.4071
+anova(nearctic_mod) #environmental transmission barely
 ```
 
 #PGLS of GMPD
@@ -1437,7 +1438,8 @@ gmpd_dat<-data.frame(taxa=gmpd_parasite_tree$tip.label,
 
 gmpd_cdat<-comparative.data(data=gmpd_dat, phy=gmpd_parasite_tree, names.col = "taxa")
 
-summary(pgls(res ~  close + env + intermediate, gmpd_cdat, lambda = "ML")) #Environmental *** and Intermediate**
+# 218 taxa (AICc = 2126.037)
+summary(gmpd_trans_mod<-pgls(res ~  close + env + intermediate, gmpd_cdat, lambda = "ML")) #Environmental *** and Intermediate**
 anova(pgls(res ~ close + env + intermediate, gmpd_cdat, lambda = "ML"))  
 
 #### Dataset that includes parasite and host traits , species ####
@@ -1454,7 +1456,7 @@ gmpd_trait_dat$host_mass=gmpd_traits$avgMass
 gmpd_trait_cdat<-comparative.data(data=gmpd_trait_dat, phy=gmpd_pgls, names.col = "taxa")
 
 ## model testing ##
-#all predictors
-summary(pgls(res ~ close + env + intermediate + para.b + host_mass, gmpd_trait_cdat, lambda = "ML"))
+#all predictors (58 taxa; AICc = 555.1904)
+summary(gmpd_mod<-pgls(res ~ close + env + intermediate + para.b + host_mass, gmpd_trait_cdat, lambda = "ML"))
 anova(pgls(res ~ close + env + intermediate + para.b + host_mass, gmpd_trait_cdat, lambda = "ML"))
 ```
