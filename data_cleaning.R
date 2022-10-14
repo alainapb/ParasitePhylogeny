@@ -6,7 +6,7 @@ library(geiger)
 ## load tree
 tree<-read.nexus("hel2_44burn_copy.trees")
 ## load the binomial names for the coded tree names
-nom <- read.csv("name_key.csv")
+nom <- read.csv("data/name_key.csv")
 # make nom characters not factors
 nom$CorrectName<-as.character(nom$CorrectName)
 nom$Code<-as.character(nom$Code)
@@ -30,11 +30,11 @@ tree$tip.label<-b$CorrectName
 global_tree<-tree
 
 ## Read in GMPD data
-GMPDmain<-read.csv("GMPD_main.csv")
-GMPDparasite<-read.csv("GMPD_parasite_traits.csv")
+GMPDmain<-read.csv("data/GMPD_main.csv")
+GMPDparasite<-read.csv("data/GMPD_parasite_traits.csv")
 
 #host-parasite association data
-nearctic_assoc_data<-read.csv("Host_Range_Nearctic_Mammals_list.csv", header=T)
+nearctic_assoc_data<-read.csv("data/Host_Range_Nearctic_Mammals_list.csv", header=T)
 
 #change to characters instead of factors
 nearctic_assoc_data$Host<-as.character(nearctic_assoc_data$Host)
@@ -99,7 +99,7 @@ nearctic_tree<-drop.tip(global_tree, setdiff(global_tree$tip.label, nearctic_ass
 
 
 #parasite abundance/occurence data
-nearctic_abund_data<-read.csv("Host_Range_Nearctic_Mammals.csv")
+nearctic_abund_data<-read.csv("data/Host_Range_Nearctic_Mammals.csv")
 
 #change to characters instead of factors
 nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
@@ -114,20 +114,20 @@ nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
 ## save the relevant databases and trees
 saveRDS(nearctic_mammal_tree, "Nearctic_mammal_tree.RDS")
 saveRDS(nearctic_tree, "Nearctic_parasite_tree.RDS")
-saveRDS(nearctic_assoc_data, "Nearctic_data.RDS")
+saveRDS(nearctic_assoc_data, "data/Nearctic_data.RDS")
 
 saveRDS(GMPD_mammal_tree, "GMPD_mammal_tree.RDS")
 saveRDS(global_tree, "GMPD_parasite_tree.RDS")
-saveRDS(GMPDsmall, "GMPD_data.RDS")
+saveRDS(GMPDsmall, "data/GMPD_data.RDS")
 
 ## Idiot check: are all parasites and hosts found in both the trees and the association data?
 Nearctic_mammal_tree <- readRDS("Nearctic_mammal_tree.RDS")
 Nearctic_parasite_tree <- readRDS("Nearctic_parasite_tree.RDS")
-Nearctic_data <- readRDS("Nearctic_data.RDS")
+Nearctic_data <- readRDS("data/Nearctic_data.RDS")
 
 GMPD_mammal_tree <- readRDS("GMPD_mammal_tree.RDS")
 GMPD_parasite_tree <- readRDS("GMPD_parasite_tree.RDS")
-GMPD_data <- readRDS("GMPD_data.RDS")
+GMPD_data <- readRDS("data/GMPD_data.RDS")
 
 setdiff(Nearctic_mammal_tree$tip.label, Nearctic_data$Host)
 setdiff(Nearctic_data$Host, Nearctic_mammal_tree$tip.label)

@@ -31,8 +31,8 @@ library(patchwork)
 
 ```{r load_in_APBs_helminth_tree, fig.height=25, fig.width=7, units='in', res=300, echo=FALSE}
 ##load data
-gmpd_data<-readRDS("GMPD_data.RDS")
-nearctic_data<-readRDS("Nearctic_data.RDS")
+gmpd_data<-readRDS("data/GMPD_data.RDS")
+nearctic_data<-readRDS("data/Nearctic_data.RDS")
 ## load trees
 gmpd_parasite_tree <- readRDS("GMPD_parasite_tree.RDS")
 nearctic_parasite_tree <- readRDS("Nearctic_parasite_tree.RDS")
@@ -226,17 +226,8 @@ nearctic_dis_mam<-cophenetic.phylo(nearctic_mammal_tree)
 nearctic_mamlist<-as.vector(nearctic_mammal_tree$tip.label) #list of mammals in tip label order
 nearctic_para_list<-as.vector(nearctic_parasite_tree$tip.label) #list of parasites
 
-#make a dataframe with host names as columns and parasite names as rows
-nearctic_df <- data.frame(matrix(ncol=length(nearctic_mamlist),nrow=length(nearctic_para_list)), row.names = nearctic_para_list)
-colnames(nearctic_df)<-nearctic_mamlist
-
-# complete dataframe with association data, 
-# where 0 = not found in host and 1 = found in host
-for (i in 1:nrow(nearctic_df))
-  nearctic_df[i,] <- (colnames(nearctic_df) %in% unique(subset(nearctic_data, Parasite==rownames(nearctic_df)[i])$Host)) %>% as.numeric
-
-#save matrix
-write.csv(nearctic_df,file = "association_matrix_nearctic.csv", row.names = TRUE, col.names = TRUE)
+#read matrix
+read.csv(file = "data/association_matrix_nearctic.csv", row.names = TRUE, col.names = TRUE)
 
 ## Create MPD scores for every parasite where single host parasites have a mpd = 0 (90taxa)
 nearctic_para_mpd <- mpd(nearctic_df, nearctic_dis_mam)
@@ -256,13 +247,8 @@ gmpd_dis_mam<-cophenetic.phylo(gmpd_mammal_tree) #intespecific distance matrix o
 ##make the pipeline to get the absence presence of each parasite (rows) that infect a given host (column)
 gmpd_mamlist<-as.vector(gmpd_mammal_tree$tip.label) #list of mammals in tip label order
 gmpd_para_list<-as.vector(gmpd_parasite_tree$tip.label)
-gmpd_df <- data.frame(matrix(ncol=length(gmpd_mamlist),nrow=length(gmpd_para_list)), row.names = gmpd_para_list)
-colnames(gmpd_df)<-gmpd_mamlist
 
-for (i in 1:nrow(gmpd_df))
-  gmpd_df[i,] <- (colnames(gmpd_df) %in% unique(subset(gmpd_data, ParasiteCorrectedName==rownames(gmpd_df)[i])$HostCorrectedName)) %>% as.numeric
-
-write.csv(gmpd_df,file = "gmpd_df.csv", row.names = TRUE, col.names = TRUE)
+read.csv(file = "data/gmpd_df.csv", row.names = TRUE, col.names = TRUE)
 
 ## Create MPD scores for every parasite where single host parasites have a mpd = 0 (250 taxa)
 gmpd_para_mpd <- mpd(gmpd_df, gmpd_dis_mam)

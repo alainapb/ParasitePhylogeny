@@ -28,12 +28,12 @@ library(taxize)
 ```{r load_in_data, include=FALSE}
 nearctic_mammal_tree <- readRDS("Nearctic_mammal_tree.RDS")
 nearctic_parasite_tree <- readRDS("Nearctic_parasite_tree.RDS")
-nearctic_data <- readRDS("Nearctic_data.RDS")
+nearctic_data <- readRDS("data/Nearctic_data.RDS")
 
 gmpd_mammal_tree <- readRDS("GMPD_mammal_tree.RDS")
 gmpd_parasite_tree <- readRDS("GMPD_parasite_tree.RDS")
-gmpd_data <- readRDS("GMPD_data.RDS")
-gmpd_parasite_data <- read.csv("GMPD_parasite_traits.csv")
+gmpd_data <- readRDS("data/GMPD_data.RDS")
+gmpd_parasite_data <- read.csv("data/GMPD_parasite_traits.csv")
 ## correct one misspelled name (which affects interaction of this data with NCBI databases)
 gmpd_parasite_tree$tip.label[which(gmpd_parasite_tree$tip.label=="Teladorasgia davtiani")] <- "Teladorsagia davtiani"
 gmpd_data$ParasiteCorrectedName[which(gmpd_data$ParasiteCorrectedName=="Teladorasgia davtiani")] <- "Teladorsagia davtiani"
@@ -41,7 +41,7 @@ gmpd_data$ParasiteCorrectedName[which(gmpd_data$ParasiteCorrectedName=="Teladora
 
 ```{r load_nearctic_data, include = FALSE}
 #parasite abundance/occurence data
-nearctic_abund_data<-read.csv("Host_Range_Nearctic_Mammals.csv")
+nearctic_abund_data<-read.csv("data/Host_Range_Nearctic_Mammals.csv")
 
 #change to characters instead of factors
 nearctic_abund_data$Parasite<-as.character(nearctic_abund_data$Var1)
@@ -110,17 +110,17 @@ for (i in 1:nrow(nearctic_host_pubs)) {
   }
 }
 
-saveRDS(gmpd_host_pubs, "GMPD_host_pubs.RDS")
-saveRDS(gmpd_para_pubs, "GMPD_para_pubs.RDS")
-saveRDS(nearctic_host_pubs, "Nearctic_host_pubs.RDS")
-saveRDS(nearctic_para_pubs, "Nearctic_para_pubs.RDS")
+saveRDS(gmpd_host_pubs, "data/GMPD_host_pubs.RDS")
+saveRDS(gmpd_para_pubs, "data/GMPD_para_pubs.RDS")
+saveRDS(nearctic_host_pubs, "data/Nearctic_host_pubs.RDS")
+saveRDS(nearctic_para_pubs, "data/Nearctic_para_pubs.RDS")
 ```
 
 ```{r load_research_effort_data, include = FALSE}
-gmpd_host_pubs <- readRDS("GMPD_host_pubs.RDS")
-gmpd_para_pubs <- readRDS("GMPD_para_pubs.RDS")
-nearctic_host_pubs <- readRDS("Nearctic_host_pubs.RDS")
-nearctic_para_pubs <- readRDS("Nearctic_para_pubs.RDS")
+gmpd_host_pubs <- readRDS("data/GMPD_host_pubs.RDS")
+gmpd_para_pubs <- readRDS("data/GMPD_para_pubs.RDS")
+nearctic_host_pubs <- readRDS("data/Nearctic_host_pubs.RDS")
+nearctic_para_pubs <- readRDS("data/Nearctic_para_pubs.RDS")
 ```
 
 #Calculate MPD for Nearctic data
@@ -145,7 +145,7 @@ for (i in 1:nrow(nearctic_df))
   nearctic_df[i,] <- (colnames(nearctic_df) %in% unique(subset(nearctic_data, Parasite==rownames(nearctic_df)[i])$Host)) %>% as.numeric
 
 #save matrix
-write.csv(nearctic_df,file = "association_matrix_nearctic.csv", row.names = TRUE, col.names = TRUE)
+write.csv(nearctic_df,file = "data/association_matrix_nearctic.csv", row.names = TRUE, col.names = TRUE)
 
 ## Create MPD scores for every parasite where single host parasites have a mpd = 0 (90taxa)
 nearctic_para_mpd <- mpd(nearctic_df, nearctic_dis_mam)
@@ -384,13 +384,13 @@ gmpd_phyla_data$regime <-
 gmpd_phyla_data$regime[178] <- "Trematoda"
 gmpd_phyla_data$phyla<-k$ParPhylum
 
-saveRDS(nearctic_phyla_data, "nearctic_phyla_data.RDS")
-saveRDS(gmpd_phyla_data, "gmpd_phyla_data.RDS")
+saveRDS(nearctic_phyla_data, "data/nearctic_phyla_data.RDS")
+saveRDS(gmpd_phyla_data, "data/gmpd_phyla_data.RDS")
 ```
 
 #Neartic ouch Models of the residuals of gls(mpd ~ host pubs) by Phyla
 ```{r nearctic_evo_phyla, echo = FALSE}
-nearctic_phyla_data <- readRDS("nearctic_phyla_data.RDS")
+nearctic_phyla_data <- readRDS("data/nearctic_phyla_data.RDS")
 nearctic_phyla_data$trait<-gls_host_pubs_mpd_nearctic$residuals
 
 ## remake to be able to use ouch rather than OUwie
@@ -443,7 +443,7 @@ saveRDS(nearctic_oum_ouch, file ="ouch_results/nearctic_oum_ouch")
 
 #GMPD ouch Models of the residuals of gls(mpd ~ host pubs) by Phyla
 ```{r gmpd_evo_phyla, echo = FALSE}
-gmpd_phyla_data <- readRDS("gmpd_phyla_data.RDS")
+gmpd_phyla_data <- readRDS("data/gmpd_phyla_data.RDS")
 gmpd_phyla_data$trait<-gls_host_pubs_mpd_gmpd$residuals
 
 ## remake to be able to use ouch rather than OUwie
@@ -1309,7 +1309,7 @@ subset(b_para_subset, Sex=="f") %>%
 b.size<-left_join(data_fem_len, data_fem_wid, by="Parasite.species")
 b.size$ratio<-(b.size$mean_l*b.size$mean_w)
 
-write.csv(b.size, "bodysizepara.csv")
+write.csv(b.size, "data/bodysizepara.csv")
 
 #### Trim the tree to include only those parasite species for which there is body size data ####
 
@@ -1330,7 +1330,7 @@ gmpd_b_size <- b.size[match(gmpd_pgls$tip.label, b.size$Parasite.species),]
 #### adding in host trait data (mass.g) from PHYLACINE ####
 #Faurby, S., Davis, M., Pedersen, R. Ø., Schowanek, S. D., Antonelli, A., & Svenning, J.C. (In Press). PHYLACINE 1.2: The Phylogenetic Atlas of Mammal Macroecology. Ecology
 #load mammal data
-Trait_data <- read_csv("Trait_data.csv")
+Trait_data <- read_csv("data/Trait_data.csv")
 
 #correct for spaces in the binomial names
 Trait_data$Binomial.1.2<-gsub("_", " ", Trait_data$Binomial.1.2)
